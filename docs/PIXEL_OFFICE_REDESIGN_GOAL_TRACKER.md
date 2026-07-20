@@ -289,3 +289,26 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — End-to-end delegated-work browser flow verification
+
+- Added browser E2E script: `scripts/verify-delegated-work-flow.cjs`.
+- Added npm script: `delegated-work:browser-qa`.
+- The script creates a fresh live QA company, logs into the Web UI, opens Company Home, fills `AI 회사에 맡길 업무`, requests an AI plan, verifies the plan preview, launches the plan, then validates downstream navigation/state.
+- Verified flow:
+  - Company Home work input
+  - `AI 팀에게 계획 요청`
+  - plan preview with staff/risk/completion criteria/decision expectation
+  - `이 계획으로 실행`
+  - Goals page with `goalId` in URL
+  - goal snapshot API
+  - delivery-process API
+  - Decision Inbox route
+  - Pixel Office goal-focus route
+  - Activity route
+- First run found reusable test-company state could fail with `Project budget exceeds department`; script now uses a fresh live QA company per run to avoid cross-test state pollution.
+- Screenshots/report written under `.runtime/visualqa/delegated-work-flow/`.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

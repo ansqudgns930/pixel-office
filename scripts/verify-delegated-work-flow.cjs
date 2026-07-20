@@ -1,0 +1,109 @@
+const { chromium } = require('playwright-core');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const apiBase = process.env.AGENT_COMPANY_API_BASE || 'http://127.0.0.1:4310';
+const webBase = process.env.AGENT_COMPANY_WEB_BASE || 'http://127.0.0.1:5173';
+const companyId = process.env.AGENT_COMPANY_FLOW_QA_COMPANY || `delegated-work-flow-qa-${Date.now()}`;
+const actorId = process.env.AGENT_COMPANY_QA_ACTOR || 'admin';
+const outDir = 'C:/Project/paperclip/multi-agent/agent-company-os/.runtime/visualqa/delegated-work-flow';
+fs.mkdirSync(outDir, { recursive: true });
+
+async function api(pathname, options = {}) {
+  const response = await fetch(apiBase + pathname, {
+    ...options,
+    headers: {
+      authorization: `Bearer ${process.env.QA_TOKEN}`,
+      'content-type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const text = await response.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(`${response.status} ${pathname}: ${JSON.stringify(body)}`);
+  return body;
+}
+
+async function ensureLiveCompany() {
+  const companies = await api(`/api/companies?actor=${encodeURIComponent(actorId)}`);
+  if (companies.some((item) => item.id === companyId)) return;
+  const workspaceId = `${companyId}-workspace`;
+  try { await api('/api/workspaces', { method: 'POST', body: JSON.stringify({ id: workspaceId, name: 'Delegated Work Flow QA Workspace' }) }); } catch {}
+  await api('/api/companies', { method: 'POST', body: JSON.stringify({ id: companyId, name: 'Delegated Work Flow QA Company', workspaceId, budgetLimit: 10, mandatoryReviews: ['result'], mandatoryApprovals: ['result'], allowedTools: ['build', 'test', 'lint'], ownerId: actorId, mode: 'live' }) });
+}
+
+async function main() {
+  if (!process.env.QA_TOKEN || !process.env.BROWSER_AUTOMATION_EXECUTABLE) throw new Error('QA_TOKEN and BROWSER_AUTOMATION_EXECUTABLE are required');
+  await ensureLiveCompany();
+  const browser = await chromium.launch({ executablePath: process.env.BROWSER_AUTOMATION_EXECUTABLE, headless: true });
+  const errors = [];
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage();
+    page.on('pageerror', (error) => errors.push(`page:${error.message}`));
+    page.on('console', (message) => { if (message.type() === 'error') errors.push(`console:${message.text()}`); });
+
+    await page.goto(`${webBase}/login`, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(({ token, actorId, companyId }) => {
+      localStorage.setItem('agent-company-os.apiToken', token);
+      localStorage.setItem('agent-company-os.actorId', actorId);
+      localStorage.setItem('agent-company-os.username', actorId);
+      localStorage.setItem('agent-company-os.role', 'admin');
+      localStorage.setItem('agent-company-os.lastCompany', companyId);
+    }, { token: process.env.QA_TOKEN, actorId, companyId });
+
+    await page.goto(`${webBase}/company?companyId=${encodeURIComponent(companyId)}`, { waitUntil: 'domcontentloaded' });
+    await page.getByText('무슨 일을 AI 회사에 맡길까요?', { exact: true }).waitFor({ timeout: 15000 });
+    await page.getByLabel('AI 회사에 맡길 업무').fill('대시보드 첫 화면에서 업무 맡기기 흐름을 더 명확하게 개선해줘');
+    await page.getByRole('button', { name: 'AI 팀에게 계획 요청' }).click();
+    await page.getByText('AI 계획 제안', { exact: true }).waitFor({ timeout: 30000 });
+    await page.screenshot({ path: path.join(outDir, '01-plan-preview.png'), fullPage: true });
+    const previewText = await page.locator('.recommendation').innerText();
+    for (const required of ['AI 계획 제안', '위험도', '완료 조건', '사용자 결정 필요 예상']) {
+      if (!previewText.includes(required)) throw new Error(`plan preview missing: ${required}`);
+    }
+
+    await page.getByRole('button', { name: '이 계획으로 실행' }).click();
+    try {
+      await page.waitForURL(/\/goals\?/, { timeout: 90000 });
+    } catch (error) {
+      await page.screenshot({ path: path.join(outDir, 'launch-timeout.png'), fullPage: true });
+      fs.writeFileSync(path.join(outDir, 'launch-timeout.txt'), await page.locator('body').innerText());
+      throw error;
+    }
+    await page.locator('.goals-page, body').first().waitFor({ timeout: 15000 });
+    await page.screenshot({ path: path.join(outDir, '02-goals-after-launch.png'), fullPage: true });
+    const url = new URL(page.url());
+    const goalId = url.searchParams.get('goalId');
+    if (!goalId) throw new Error(`goalId missing after launch: ${page.url()}`);
+    const goalsText = await page.locator('body').innerText();
+    if (!goalsText.includes('맡긴 일') && !goalsText.includes('Goal')) throw new Error('goals page did not render delegated work context');
+
+    const goalSnapshot = await api(`/api/companies/${encodeURIComponent(companyId)}/goals/${encodeURIComponent(goalId)}?actor=${encodeURIComponent(actorId)}`);
+    const delivery = await api(`/api/companies/${encodeURIComponent(companyId)}/goals/${encodeURIComponent(goalId)}/delivery-process?actor=${encodeURIComponent(actorId)}`);
+    if (!goalSnapshot?.goal?.id && !goalSnapshot?.id) throw new Error('goal snapshot missing goal identity');
+    if (!delivery?.process?.goalId && !delivery?.goalId) throw new Error('delivery process missing');
+
+    await page.goto(`${webBase}/reviews?companyId=${encodeURIComponent(companyId)}`, { waitUntil: 'domcontentloaded' });
+    await page.getByText('결정 필요', { exact: true }).first().waitFor({ timeout: 15000 });
+    await page.screenshot({ path: path.join(outDir, '03-decision-inbox.png'), fullPage: true });
+
+    await page.goto(`${webBase}/pixel-office?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(goalId)}`, { waitUntil: 'domcontentloaded' });
+    await page.getByText('선택 목표 추적 중', { exact: true }).waitFor({ timeout: 15000 });
+    await page.getByText('진행 상황 LIVE VIEW').or(page.getByText('진행 상황 Live View')).waitFor({ timeout: 15000 });
+    await page.screenshot({ path: path.join(outDir, '04-pixel-office-goal-focus.png'), fullPage: true });
+
+    await page.goto(`${webBase}/activity?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(goalId)}`, { waitUntil: 'domcontentloaded' });
+    await page.getByText('결과·활동').or(page.getByText('실시간 연결')).waitFor({ timeout: 15000 });
+    await page.screenshot({ path: path.join(outDir, '05-activity.png'), fullPage: true });
+
+    const report = { generatedAt: new Date().toISOString(), companyId, goalId, deliveryProcessId: delivery.process?.id ?? delivery.id ?? null, url: page.url(), errors };
+    fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+    if (errors.length) process.exitCode = 1;
+  } finally {
+    await browser.close();
+  }
+}
+
+main().catch((error) => { console.error(error); process.exit(1); });
