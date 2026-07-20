@@ -27,6 +27,20 @@ interface WorkPlanPreview extends StaffingPlanResponse {
   draft: GoalDraftResponse;
 }
 
+function companyActionErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/Project budget exceeds department/i.test(message)) {
+    return "실행 프로젝트 예산이 선택된 부서 예산을 초과했습니다. 회사 홈의 조직·Agent 탭에서 부서 예산을 늘리거나, 더 작은 예산으로 다시 실행하세요.";
+  }
+  if (/Automatic execution requires a positive goal budget/i.test(message)) {
+    return "자동 실행에는 1 이상의 목표 예산이 필요합니다. 회사/목표 예산을 확인해 주세요.";
+  }
+  if (/Goal drafting unavailable/i.test(message)) {
+    return "AI 계획 제안 기능을 사용할 수 없습니다. 잠시 후 다시 시도하거나 관리자 설정을 확인하세요.";
+  }
+  return message;
+}
+
 export default function CompanyPage() {
   const { actorId } = useSession();
   const toast = useToast();
@@ -49,7 +63,7 @@ export default function CompanyPage() {
 
   async function guarded(work: () => Promise<void>) {
     setBusy(true); setError(null);
-    try { await work(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
+    try { await work(); } catch (e) { setError(companyActionErrorMessage(e)); } finally { setBusy(false); }
   }
 
   function load(id=companyId) {

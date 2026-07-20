@@ -312,3 +312,14 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — Company Home delegated-work error copy hardening
+
+- E2E discovered raw launch failure copy: `Project budget exceeds department` when a reused company has incompatible department/project budget state.
+- Added Company Home error translation for budget/delegated-work launch failures.
+- User-facing copy now explains that the execution project budget exceeds selected department budget and points to the `조직·Agent` tab or smaller budget retry.
+- Also added friendlier copy for missing positive goal budget and unavailable goal drafting.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
