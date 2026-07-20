@@ -37,7 +37,7 @@ export default function App() {
           <Route path="pixel-office" element={<PixelOfficePage />} />
           <Route path="platform" element={<PlatformPage />} />
           <Route path="operations" element={<OperationsPage />} />
-          <Route path="*" element={<Navigate to="/execution" replace />} />
+          <Route path="*" element={<Navigate to="/companies" replace />} />
         </Route>
       </Route>
     </Routes></Suspense></AppErrorBoundary>
