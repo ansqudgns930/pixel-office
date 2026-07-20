@@ -59,7 +59,9 @@ export default function BackendSettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = role === "admin" || companies.find(item => item.id === companyId)?.role === "owner";
+  const selectedCompany = companies.find(item => item.id === companyId);
+  const isAdmin = role === "admin" || selectedCompany?.role === "owner";
+  const isDemoCompany = selectedCompany?.mode === "demo";
   const changedSummary = useMemo(() => configs.map(config => `${config.label}: ${config.backend} / ${config.model || "모델 미선택"}`), [configs]);
 
   function updateConfig(target: BindingTarget, patch: Partial<EngineConfig>) {
@@ -161,6 +163,7 @@ export default function BackendSettingsPage() {
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       {!isAdmin && <p className="error">관리자 또는 회사 Owner만 AI 엔진 설정을 변경할 수 있습니다.</p>}
+      {isDemoCompany && <div className="measurement-guidance" style={{ marginTop: 12 }}><strong>Demo 회사 주의</strong><span>이 회사는 Run snapshot에서 demo-mode가 우선되어 저장된 backend/model 대신 standalone · phase0-model로 실행됩니다. 실제 role binding 검증은 live 회사에서 진행하세요.</span></div>}
     </section>
 
     <section className="card" aria-label="AI 엔진 운영 원칙">

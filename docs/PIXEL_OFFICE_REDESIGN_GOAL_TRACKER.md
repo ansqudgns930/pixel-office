@@ -250,3 +250,16 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — AI Engine binding validation + demo-mode warning
+
+- Verified agent binding save flow through `/api/companies/:companyId/agent-bindings`.
+- Saved company default plus role bindings for planner, worker, and reviewer.
+- Verified saved bindings are listed correctly.
+- Launched a small demo-company Run and checked `/api/runs/:runId/agent-bindings`.
+- Finding: demo company Run snapshots intentionally resolve to `demo-mode` with `standalone · phase0-model`, regardless of saved bindings.
+- Confirmed this is implemented in `AgentBindingStore.freezeRun()`: non-demo companies use member/role/company/runtime resolution; demo mode is forced standalone.
+- Added Backend Settings warning for demo companies so administrators do not confuse saved settings with demo-mode Run execution.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
