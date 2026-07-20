@@ -1,15 +1,33 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "../components/PageHeader.tsx";
 import CompanyModeBadge from "../components/CompanyModeBadge.tsx";
 import { useSession } from "../auth/SessionContext.tsx";
 import { apiGet, apiPost } from "../api.ts";
 import { useToast } from "../components/ToastContext.tsx";
 import type { AgentBackendType,AgentBinding,CompanyCommandCenterSnapshot,CompanyRecord } from "../types.ts";
+import { uuid } from "../format.ts";
+
+interface GoalDraftResponse {
+  title: string;
+  description: string;
+  completionCriteria: string[];
+  status: "model" | "fallback";
+  warnings: string[];
+}
+
+interface WorkPlanPreview {
+  draft: GoalDraftResponse;
+  staff: string[];
+  steps: string[];
+  risk: "low" | "medium" | "high" | "critical";
+  decisionExpectation: string;
+}
 
 export default function CompanyPage() {
   const { actorId } = useSession();
   const toast = useToast();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [companyId, setCompanyId] = useState(() => params.get("companyId") ?? localStorage.getItem("agent-company-os.lastCompany") ?? "");
   const [snapshot, setSnapshot] = useState<CompanyCommandCenterSnapshot | null>(null);
@@ -20,7 +38,7 @@ export default function CompanyPage() {
   const [health,setHealth]=useState<{metrics:{completedRuns:number;qualityPasses:number;validationFailures:number;incidents:number}}|null>(null);
   const [bindings,setBindings]=useState<AgentBinding[]>([]),[bindingKind,setBindingKind]=useState<"company"|"role"|"member">("company"),[bindingTarget,setBindingTarget]=useState(""),[bindingBackend,setBindingBackend]=useState<AgentBackendType>("standalone"),[bindingModel,setBindingModel]=useState("phase0-model");
   const [workRequest, setWorkRequest] = useState("");
-  const [planPreview, setPlanPreview] = useState<string | null>(null);
+  const [planPreview, setPlanPreview] = useState<WorkPlanPreview | null>(null);
 
   const [departmentId, setDepartmentId] = useState("");
   const [departmentName, setDepartmentName] = useState("");
@@ -40,13 +58,7 @@ export default function CompanyPage() {
 
   useEffect(() => { void apiGet<Array<CompanyRecord&{role:string;projectCount:number}>>(`/api/companies?actor=${encodeURIComponent(actorId)}`).then(items=>{const received=Array.isArray(items),valid=(received?items:[]).filter(item=>item.status==="active");setCompanies(valid);const requested=params.get("companyId")||companyId,selected=valid.some(item=>item.id===requested)?requested:received?valid[0]?.id:requested;if(selected)void load(selected);else{setCompanyId("");setSnapshot(null);}}).catch(e=>{const requested=params.get("companyId")||companyId;if(requested)void load(requested);else setError(e instanceof Error?e.message:String(e));}); }, []);
 
-  function proposeWorkPlan() {
-    const request = workRequest.trim();
-    if (!request) {
-      setPlanPreview(null);
-      toast("먼저 AI 회사에 맡길 업무를 입력하세요.");
-      return;
-    }
+  function classifyWork(request: string) {
     const lower = request.toLowerCase();
     const isUi = /ui|ux|화면|디자인|레이아웃|버튼|랜딩|온보딩/.test(lower);
     const isSecurity = /auth|인증|권한|보안|security|token|secret|비밀/.test(lower);
@@ -57,6 +69,7 @@ export default function CompanyPage() {
     if (isUi) { staff.add("PM"); staff.add("Designer"); }
     if (isCopy) staff.add("Copywriter");
     if (isSecurity) { staff.add("PM"); staff.add("Security"); }
+    if (!staff.size) staff.add("Developer");
     staff.add("Developer");
     staff.add("QA");
     const steps = [
@@ -67,15 +80,43 @@ export default function CompanyPage() {
       "빌드·테스트·검증",
       "검증된 결과 보고와 다음 작업 추천",
     ];
-    const planText = [
-      `투입 직원: ${Array.from(staff).join(" + ")}`,
-      "",
-      "실행 계획:",
-      ...steps.map((step, index) => `${index + 1}. ${step}`),
-      "",
-      `사용자 결정 필요 예상: ${isSecurity || isLarge ? "있음 — 위험/범위 변경 시 확인 요청" : "낮음 — 검증 실패 또는 범위 변경 시에만 요청"}`,
-    ].join("\n");
-    setPlanPreview(planText);
+    const risk = isSecurity || isLarge ? "high" : isUi || isCopy ? "medium" : "low";
+    return { staff: Array.from(staff), steps, risk, decisionExpectation: isSecurity || isLarge ? "있음 — 위험/범위 변경 시 확인 요청" : "낮음 — 검증 실패 또는 범위 변경 시에만 요청" } as const;
+  }
+
+  function proposeWorkPlan() {
+    return guarded(async () => {
+      const request = workRequest.trim();
+      if (!request) {
+        setPlanPreview(null);
+        toast("먼저 AI 회사에 맡길 업무를 입력하세요.");
+        return;
+      }
+      const draft = await apiPost<GoalDraftResponse>(`/api/companies/${encodeURIComponent(companyId)}/goals/draft`, { actorId, rough: request });
+      const completionCriteria = draft.completionCriteria.length ? draft.completionCriteria : ["요청한 업무가 적용되어야 합니다.", "빌드 또는 관련 검증이 통과해야 합니다.", "결과 보고에 변경 내용과 검증 근거가 포함되어야 합니다."];
+      setPlanPreview({ draft: { ...draft, completionCriteria }, ...classifyWork(request) });
+    });
+  }
+
+  function launchWorkPlan() {
+    if (!planPreview || !portfolio) return;
+    return guarded(async () => {
+      const budgetLimit = Math.max(1, Math.min(10, Number(portfolio.company.budgetLimit) || 10));
+      const result = await apiPost<{goal:{id:string};provisioning:{runId:string}}>(`/api/companies/${encodeURIComponent(companyId)}/goals/launch`, {
+        actorId,
+        id: uuid(),
+        title: planPreview.draft.title,
+        description: planPreview.draft.description || workRequest.trim(),
+        ownerId: actorId,
+        completionCriteria: planPreview.draft.completionCriteria,
+        budgetLimit,
+        requestedRisk: planPreview.risk,
+        requestedPaths: ["src"],
+      });
+      toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
+      await load();
+      navigate(`/goals?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(result.goal.id)}`);
+    });
   }
 
   function createDepartment() {
@@ -114,7 +155,7 @@ export default function CompanyPage() {
           </label>
           <button disabled={busy || !companyId} onClick={() => void load()}>현황 새로고침</button>
           <Link className="button-link" to="/companies">회사 목록</Link>
-          {companyId && <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>회사 목표</Link>}
+          {companyId && <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일</Link>}
           {companyId && <Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의</Link>}
           {companyId && <Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀 오피스</Link>}
         </div>
@@ -144,9 +185,24 @@ export default function CompanyPage() {
         {planPreview && (
           <div className="recommendation" style={{ marginTop: 12, borderLeftColor: "#3fb950" }}>
             <strong>AI 계획 제안</strong>
-            <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0" }}>{planPreview}</pre>
+            <div style={{ marginTop: 8 }}><strong>{planPreview.draft.title}</strong></div>
+            <p>{planPreview.draft.description || workRequest.trim()}</p>
+            <div className="badge-row">
+              {planPreview.staff.map(member => <span key={member} className="badge">{member}</span>)}
+              <span className="badge">위험도 {planPreview.risk}</span>
+              {planPreview.draft.status === "fallback" && <span className="badge">fallback draft</span>}
+            </div>
+            <ol>
+              {planPreview.steps.map(step => <li key={step}>{step}</li>)}
+            </ol>
+            <div><strong>완료 조건</strong></div>
+            <ul>
+              {planPreview.draft.completionCriteria.map(item => <li key={item}>{item}</li>)}
+            </ul>
+            <p><strong>사용자 결정 필요 예상:</strong> {planPreview.decisionExpectation}</p>
+            {planPreview.draft.warnings.length > 0 && <p className="error">{planPreview.draft.warnings.join(", ")}</p>}
             <div className="row" style={{ marginTop: 8 }}>
-              <button disabled title="다음 단계에서 기존 goal/run 실행 API와 연결합니다.">이 계획으로 실행</button>
+              <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>이 계획으로 실행</button>
               <button className="secondary" onClick={() => setPlanPreview(null)}>수정 요청</button>
               <Link className="button-link" to={companyId ? `/employees?companyId=${encodeURIComponent(companyId)}` : "/employees"}>투입 직원 보기</Link>
             </div>
@@ -173,7 +229,7 @@ export default function CompanyPage() {
             <div className={`stat-tile${health?.metrics.validationFailures?" danger":""}`}><div className="label">검증 실패</div><div className="value">{health?.metrics.validationFailures??0}</div></div>
             <div className={`stat-tile${health?.metrics.incidents?" danger":""}`}><div className="label">Incident</div><div className="value">{health?.metrics.incidents??0}</div></div>
           </div>
-          <section className="company-next-actions" aria-label="회사 주요 행동"><Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>회사 내부 들어가기</Link><Link className="button-link" to={`/employees?companyId=${encodeURIComponent(companyId)}`}>직원 현황</Link><Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>회사 목표 전체 현황</Link><Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의 참여</Link><Link className="button-link" to={`/projects?companyId=${encodeURIComponent(companyId)}`}>프로젝트 보기</Link><Link className="button-link" to={`/execution?companyId=${encodeURIComponent(companyId)}`}>실행·승인 확인</Link>{snapshot.meetingSessions?.some(x=>x.status==="live")&&<span className="badge"><span className="status-dot status-good"/>진행 중 회의 {snapshot.meetingSessions.filter(x=>x.status==="live").length}건</span>}{totals.approvals>0&&<span className="badge"><span className="status-dot status-warning"/>승인 대기 {totals.approvals}건</span>}{totals.blocked>0&&<span className="badge"><span className="status-dot status-critical"/>차단 {totals.blocked}건</span>}</section>
+          <section className="company-next-actions" aria-label="회사 주요 행동"><Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀오피스로 보기</Link><Link className="button-link" to={`/employees?companyId=${encodeURIComponent(companyId)}`}>직원·AI팀</Link><Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일 전체 현황</Link><Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의 참여</Link><Link className="button-link" to={`/projects?companyId=${encodeURIComponent(companyId)}`}>프로젝트 보기</Link><Link className="button-link" to={`/execution?companyId=${encodeURIComponent(companyId)}`}>고급 실행 확인</Link>{snapshot.meetingSessions?.some(x=>x.status==="live")&&<span className="badge"><span className="status-dot status-good"/>진행 중 회의 {snapshot.meetingSessions.filter(x=>x.status==="live").length}건</span>}{totals.approvals>0&&<span className="badge"><span className="status-dot status-warning"/>승인 대기 {totals.approvals}건</span>}{totals.blocked>0&&<span className="badge"><span className="status-dot status-critical"/>차단 {totals.blocked}건</span>}</section>
           <nav className="section-tabs" aria-label="회사 상세 영역">
             <button className={activeTab === "overview" ? "active" : ""} aria-pressed={activeTab === "overview"} onClick={() => setActiveTab("overview")}>현황</button>
             <button className={activeTab === "organization" ? "active" : ""} aria-pressed={activeTab === "organization"} onClick={() => setActiveTab("organization")}>조직·Agent</button>

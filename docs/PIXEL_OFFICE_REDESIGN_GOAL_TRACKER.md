@@ -47,7 +47,7 @@ Acceptance criteria:
 
 ### UX-C — AI 계획 제안 흐름 구현
 
-Status: **Pending**
+Status: **Partial Done — home draft/launch API wiring added; deeper staffing backend pending**
 
 Scope:
 - 입력 업무를 목표/계획/성공 기준으로 draft
@@ -140,5 +140,15 @@ Acceptance criteria:
 - Added local plan preview that proposes staff and execution steps by request type.
 - Added links to delegated work, decision inbox, staff view, and Pixel Office live view.
 - `이 계획으로 실행` is intentionally disabled until it is wired to existing goal/run APIs.
+- Ran: `npm --prefix apps/web run build`
+- Result: PASS
+
+### 2026-07-20 — UX-C first vertical slice
+
+- Wired company-home `AI 팀에게 계획 요청` to existing `/api/companies/:companyId/goals/draft` endpoint.
+- Replaced local text-only preview with structured title/description/completion criteria/staff/risk plan preview.
+- Enabled `이 계획으로 실행` and wired it to existing `/api/companies/:companyId/goals/launch` endpoint.
+- Launch now creates a delegated goal/run flow and navigates to `/goals` for follow-up.
+- Dynamic staffing is still UI-local classification; next backend work should formalize staffing rules in shared package/API.
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS
