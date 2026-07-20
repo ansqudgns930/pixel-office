@@ -199,3 +199,17 @@ Acceptance criteria:
 - Kept API key out of UI storage/binding config; baseUrl/cliPath only are saved when present.
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS
+
+### 2026-07-20 — Redesign visual QA smoke
+
+- Added reusable Playwright smoke script: `scripts/pixel-office-redesign-visualqa.cjs`.
+- Verified key redesigned screens with screenshot output:
+  - Company home: `/company?companyId=demo-company`
+  - Staff/team: `/employees?companyId=demo-company`
+  - Decision inbox: `/reviews?companyId=demo-company`
+  - Pixel Office live view: `/pixel-office?companyId=demo-company`
+  - Backend settings: `/settings/backend?companyId=demo-company`
+- Desktop viewport: `1440x1000`.
+- Mobile smoke viewport: `390x844` for company home and backend settings.
+- Result: PASS — no required copy missing, no horizontal overflow, no browser console/page errors.
+- Screenshots/report written under `.runtime/visualqa/pixel-office-redesign/`.
