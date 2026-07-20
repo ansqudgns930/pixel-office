@@ -112,6 +112,16 @@ interface Company {
   role: string;
   status: string;
 }
+interface CompanyAlert {
+  key: string;
+  kind: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  description: string;
+  url: string;
+  createdAt: string;
+  readAt: string | null;
+}
 
 const readinessLabel: Record<ReadinessStatus, string> = {
   passed: "통과",
@@ -198,6 +208,7 @@ export default function OwnerReviewsPage() {
         "",
     ),
     [items, setItems] = useState<QueueItem[]>([]),
+    [alerts, setAlerts] = useState<CompanyAlert[]>([]),
     [selectedId, setSelectedId] = useState(() => params.get("reviewId") ?? ""),
     [mode, setMode] = useState<Mode>("decision"),
     [reason, setReason] = useState(""),
@@ -217,10 +228,12 @@ export default function OwnerReviewsPage() {
     setBusy(true);
     setError(null);
     try {
-      const queue = await apiGet<QueueItem[]>(
-        `/api/companies/${encodeURIComponent(id)}/owner-reviews?actor=${encodeURIComponent(actorId)}&includeResolved=true`,
-      );
+      const [queue, nextAlerts] = await Promise.all([
+        apiGet<QueueItem[]>(`/api/companies/${encodeURIComponent(id)}/owner-reviews?actor=${encodeURIComponent(actorId)}&includeResolved=true`),
+        apiGet<CompanyAlert[]>(`/api/companies/${encodeURIComponent(id)}/alerts?actor=${encodeURIComponent(actorId)}`).catch(() => []),
+      ]);
       setItems(queue);
+      setAlerts(nextAlerts);
       const next = queue.some((x) => x.review.id === reviewId)
         ? reviewId
         : (queue[0]?.review.id ?? "");
@@ -320,6 +333,9 @@ export default function OwnerReviewsPage() {
     }
   }
   const packet = selected?.review.packet;
+  const activeAlerts = alerts.filter((alert) => !alert.readAt);
+  const criticalSignals = activeAlerts.filter((alert) => alert.severity === "critical").length;
+  const decisionSignals = activeAlerts.filter((alert) => ["blocked", "validation", "meeting", "approval"].includes(alert.kind));
   return (
     <div className="owner-center-page">
       <PageHeader
@@ -360,11 +376,24 @@ export default function OwnerReviewsPage() {
         <div className="stat-grid">
           <div className="stat-tile warning"><div className="label">지금 결정 필요</div><div className="value">{items.filter(x => x.review.status === "pending").length}</div></div>
           <div className="stat-tile"><div className="label">보류 중</div><div className="value">{items.filter(x => x.review.status === "on-hold").length}</div></div>
-          <div className="stat-tile danger"><div className="label">고위험</div><div className="value">{items.filter(x => (x.review.status === "pending" || x.review.status === "on-hold") && x.urgency === "high").length}</div></div>
-          <div className="stat-tile"><div className="label">전체 이력</div><div className="value">{items.length}</div></div>
+          <div className="stat-tile danger"><div className="label">고위험</div><div className="value">{items.filter(x => (x.review.status === "pending" || x.review.status === "on-hold") && x.urgency === "high").length + criticalSignals}</div></div>
+          <div className="stat-tile"><div className="label">추가 신호</div><div className="value">{activeAlerts.length}</div></div>
         </div>
         <div className="measurement-guidance" style={{ marginTop: 12 }}><strong>운영 원칙</strong><span>AI 회사는 권한·위험·불확실성·검증 부족이 있을 때만 멈춥니다. 여기서는 필요한 판단만 처리하고, 나머지는 자동 진행되게 둡니다.</span></div>
       </section>
+      {activeAlerts.length > 0 && (
+        <section className="card" aria-label="결정 필요 통합 신호">
+          <div className="section-heading"><div><span className="eyebrow">UNIFIED SIGNALS</span><h2>Owner Review 밖의 결정·주의 신호</h2><p>회의 결정 대기, 검증 실패, blocked task, 승인 대기, 예산 위험도 이곳에서 함께 확인합니다.</p></div><span className="badge">{decisionSignals.length} actionable</span></div>
+          <div className="activity-list">
+            {activeAlerts.slice(0, 8).map((alert) => (
+              <article key={alert.key} className={`activity-card severity-${alert.severity}`}>
+                <div><strong>{safeUserText(alert.title)}</strong><p>{safeUserText(alert.description)}</p><small>{alert.kind} · {alert.severity} · {new Date(alert.createdAt).toLocaleString()}</small></div>
+                <Link className="button-link" to={alert.url}>관련 화면 열기</Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}

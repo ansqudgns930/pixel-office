@@ -226,3 +226,15 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-20 — Decision Inbox unified signals slice
+
+- Extended Decision Inbox UI beyond owner-review queue.
+- Added company alert loading from `/api/companies/:companyId/alerts`.
+- Unified visible signals for blocked tasks, validation failures, meeting decision-pending/live states, approvals, budget risk, notifications, and unroutable reports.
+- Added `추가 신호` summary metric.
+- Added `Owner Review 밖의 결정·주의 신호` section with links to related screens.
+- Kept owner-review approval flow unchanged.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
