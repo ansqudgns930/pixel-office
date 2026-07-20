@@ -76,7 +76,7 @@ Acceptance criteria:
 
 ### UX-E — Decision Inbox 통합
 
-Status: **Pending**
+Status: **Partial Done — decision inbox product framing added; cross-source unification pending**
 
 Scope:
 - `/reviews`를 `결정 필요` 중심 UX로 변경
@@ -162,5 +162,16 @@ Acceptance criteria:
 - Added external specialist lounge: Researcher, Data Analyst, Marketing, Security, Copywriter, Legal, Extra Developer.
 - Added user-facing staff labels while preserving existing internal roles.
 - Ran: `npm run build`
+- Ran: `npm --prefix apps/web run build`
+- Result: PASS
+
+### 2026-07-20 — UX-E first vertical slice
+
+- Renamed Owner Review page framing to `결정 필요`.
+- Added Decision Inbox summary metrics: pending, on-hold, high-risk, total history.
+- Added product guidance explaining that AI stops only for authority/risk/uncertainty/evidence gaps.
+- Added direct links to company home, delegated work, and meetings.
+- Updated decision-copy CTAs: approve and continue, revise and bring back, hold, resume decision.
+- Updated company home labels from approval-centric wording to decision-needed wording.
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS

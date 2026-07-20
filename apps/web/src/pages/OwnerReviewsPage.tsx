@@ -323,8 +323,8 @@ export default function OwnerReviewsPage() {
   return (
     <div className="owner-center-page">
       <PageHeader
-        title="오너 결정 센터"
-        description="승인에 필요한 핵심 내용과 검증 근거를 한 화면에서 확인하고 결정합니다."
+        title="결정 필요"
+        description="AI 회사가 멈춘 이유, 필요한 판단, 승인·수정 요청·보류 액션을 한곳에서 처리합니다."
       />
       <section className="owner-center-toolbar card">
         <label>
@@ -351,8 +351,19 @@ export default function OwnerReviewsPage() {
           className="button-link"
           to={`/goals?companyId=${encodeURIComponent(companyId)}${selected ? `&goalId=${encodeURIComponent(selected.review.goalId)}` : ""}`}
         >
-          목표 현황
+          맡긴 일
         </Link>
+        <Link className="button-link" to={`/company?companyId=${encodeURIComponent(companyId)}`}>회사 홈</Link>
+        <Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의</Link>
+      </section>
+      <section className="card" aria-label="결정 필요 요약">
+        <div className="stat-grid">
+          <div className="stat-tile warning"><div className="label">지금 결정 필요</div><div className="value">{items.filter(x => x.review.status === "pending").length}</div></div>
+          <div className="stat-tile"><div className="label">보류 중</div><div className="value">{items.filter(x => x.review.status === "on-hold").length}</div></div>
+          <div className="stat-tile danger"><div className="label">고위험</div><div className="value">{items.filter(x => (x.review.status === "pending" || x.review.status === "on-hold") && x.urgency === "high").length}</div></div>
+          <div className="stat-tile"><div className="label">전체 이력</div><div className="value">{items.length}</div></div>
+        </div>
+        <div className="measurement-guidance" style={{ marginTop: 12 }}><strong>운영 원칙</strong><span>AI 회사는 권한·위험·불확실성·검증 부족이 있을 때만 멈춥니다. 여기서는 필요한 판단만 처리하고, 나머지는 자동 진행되게 둡니다.</span></div>
       </section>
       {error && (
         <p className="error" role="alert">
@@ -366,9 +377,9 @@ export default function OwnerReviewsPage() {
         >
           <header>
             <div>
-              <span className="eyebrow">DECISIONS</span>
+              <span className="eyebrow">DECISION INBOX</span>
               <h2>
-                결정 대기{" "}
+                지금 결정할 일{" "}
                 {
                   items.filter(
                     (x) =>
@@ -415,16 +426,16 @@ export default function OwnerReviewsPage() {
           ))}
           {!items.length && (
             <div className="owner-center-empty">
-              <strong>검토 이력이 없습니다.</strong>
-              <span>팀 검토가 끝나면 여기에 자동으로 표시됩니다.</span>
+              <strong>지금 결정할 일이 없습니다.</strong>
+              <span>AI 회사가 자동으로 진행 중입니다. 사람 판단이 필요한 순간에만 여기에 표시됩니다.</span>
             </div>
           )}
         </aside>
         <main className="owner-review-detail">
           {!selected || !packet ? (
             <div className="owner-center-empty large">
-              <strong>검토 대기 항목을 선택하세요.</strong>
-              <span>승인 가능한 패킷만 결정 화면에 표시됩니다.</span>
+              <strong>결정할 항목을 선택하세요.</strong>
+              <span>AI 회사가 멈춘 이유와 필요한 사용자 판단을 확인할 수 있습니다.</span>
             </div>
           ) : (
             <>
@@ -466,10 +477,10 @@ export default function OwnerReviewsPage() {
               {mode === "decision" && (
                 <div className="owner-packet-content">
                   <section className="owner-summary-block">
-                    <span>이번 결정</span>
+                    <span>사용자 판단 요청</span>
                     <h3>
-                      {packet.stageLabel} 결과를 승인하고 다음 단계로
-                      진행할까요?
+                      {packet.stageLabel} 결과를 승인하고 AI 회사가 다음 단계로
+                      계속 진행하게 할까요?
                     </h3>
                     <p>
                       {safeUserText(
@@ -656,12 +667,12 @@ export default function OwnerReviewsPage() {
                   className={`owner-decision-panel ${mode === "decision" ? "" : "reviewing-evidence"}`}
                 >
                   <label>
-                    수정 요청 또는 보류 사유
+수정 요청 또는 보류 사유
                     <textarea
                       rows={4}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      placeholder="수정할 화면·기능·완료 기준을 구체적으로 적어 주세요."
+                      placeholder="무엇을 바꿔야 하는지, 어떤 조건이 충족되어야 다시 진행할 수 있는지 적어 주세요."
                     />
                   </label>
                   <div>
@@ -670,21 +681,21 @@ export default function OwnerReviewsPage() {
                       disabled={busy || !reason.trim()}
                       onClick={() => void decide("on-hold")}
                     >
-                      보류
+                      잠시 보류
                     </button>
                     <button
                       className="secondary"
                       disabled={busy || !reason.trim()}
                       onClick={() => void decide("revision-requested")}
                     >
-                      수정 요청
+                      수정해서 다시 가져오기
                     </button>
                     {selected.review.status === "on-hold" ? (
                       <button
                         disabled={busy}
                         onClick={() => void decide("resume")}
                       >
-                        검토 재개
+                        다시 결정하기
                       </button>
                     ) : (
                       <button
@@ -701,8 +712,8 @@ export default function OwnerReviewsPage() {
                         onClick={() => void decide("approved")}
                       >
                         {selected.stage === "release"
-                          ? "배포 결정 및 승인"
-                          : "다음 단계 진행 승인"}
+                          ? "배포까지 승인"
+                          : "승인하고 계속 진행"}
                       </button>
                     )}
                   </div>
