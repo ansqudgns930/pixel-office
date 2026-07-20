@@ -175,6 +175,7 @@ export default function BackendSettingsPage() {
         <span className="badge">Worker/Developer → 구현</span>
         <span className="badge">Reviewer/QA → 검증</span>
         <span className="badge">API key 원문 저장 금지</span>
+        <span className="badge">Live Run snapshot에서 최종 적용 확인</span>
       </div>
     </section>
 
@@ -210,6 +211,7 @@ export default function BackendSettingsPage() {
       <div className="section-heading"><div><h2>저장 전 요약</h2><p>저장된 설정은 다음 Run부터 적용됩니다. 이미 시작된 Run의 snapshot은 바뀌지 않습니다.</p></div><button disabled={!isAdmin || busy || !companyId} onClick={() => void saveAll()}>전체 저장</button></div>
       <ul>{changedSummary.map(item => <li key={item}>{item}</li>)}</ul>
       <h3>현재 저장된 binding</h3>
+      <p className="empty-state">운영 검증 명령: <code>powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-live-binding-snapshot.ps1</code></p>
       <div className="binding-list">{bindings.map(binding => <article key={binding.id}><strong>{binding.targetKind}:{binding.targetId}</strong><span>{binding.backend} · {binding.modelId}</span><small>v{binding.version} · {binding.changedBy}</small></article>)}{!bindings.length && <p className="empty-state">저장된 AI 엔진 설정이 없습니다.</p>}</div>
     </section>
   </div>;

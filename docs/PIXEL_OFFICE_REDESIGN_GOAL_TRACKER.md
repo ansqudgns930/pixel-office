@@ -263,3 +263,18 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — Live company role binding end-to-end verification
+
+- Created reusable verification script: `scripts/verify-live-binding-snapshot.ps1`.
+- Script creates/reuses a live verification company, stores company/default and role bindings, launches a small goal, then checks `/api/runs/:runId/agent-bindings`.
+- Verified live Run snapshot resolution:
+  - planner → `claude-cli · sonnet-5 · resolution=role`
+  - worker → `codex-cli · gpt-5 · resolution=role`
+  - reviewer → `openai-compatible · nvidia/nemotron-3-ultra-550b-a55b · resolution=role`
+- Added Backend Settings note that actual application should be verified through live Run binding snapshots.
+- Added visible QA command reference in Backend Settings.
+- Ran: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-live-binding-snapshot.ps1`
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
