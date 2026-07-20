@@ -16,6 +16,7 @@ const GoalsPage=lazy(()=>import("./pages/GoalsPage.tsx"));
 const MeetingsPage=lazy(()=>import("./pages/MeetingsPage.tsx"));
 const ActivityPage=lazy(()=>import("./pages/ActivityPage.tsx"));
 const OwnerReviewsPage=lazy(()=>import("./pages/OwnerReviewsPage.tsx"));
+const BackendSettingsPage=lazy(()=>import("./pages/BackendSettingsPage.tsx"));
 const loading=<div className="route-loading" role="status"><span className="loading-spinner" aria-hidden="true"/><strong>화면을 준비하고 있습니다.</strong></div>;
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="company" element={<CompanyPage />} />
           <Route path="pixel-office" element={<PixelOfficePage />} />
           <Route path="platform" element={<PlatformPage />} />
+          <Route path="settings/backend" element={<BackendSettingsPage />} />
           <Route path="operations" element={<OperationsPage />} />
           <Route path="*" element={<Navigate to="/companies" replace />} />
         </Route>

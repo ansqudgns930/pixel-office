@@ -1,0 +1,213 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import PageHeader from "../components/PageHeader.tsx";
+import { useSession } from "../auth/SessionContext.tsx";
+import { apiGet, apiPost } from "../api.ts";
+import { useToast } from "../components/ToastContext.tsx";
+import type { AgentBackendType, AgentBinding, CompanyRecord } from "../types.ts";
+
+type BindingTarget = "company" | "planner" | "worker" | "reviewer";
+
+interface EngineConfig {
+  target: BindingTarget;
+  label: string;
+  description: string;
+  backend: AgentBackendType;
+  model: string;
+  baseUrl: string;
+  cliPath: string;
+  modelOptions: string[];
+  loadingModels: boolean;
+}
+
+const BACKENDS: AgentBackendType[] = ["openai-compatible", "claude-cli", "codex-cli", "standalone", "legacy-nvidia"];
+
+const DEFAULT_CONFIGS: EngineConfig[] = [
+  { target: "company", label: "회사 기본 AI 엔진", description: "역할별 설정이 없을 때 쓰는 기본값입니다.", backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b", baseUrl: "https://integrate.api.nvidia.com/v1", cliPath: "", modelOptions: [], loadingModels: false },
+  { target: "planner", label: "Planner / PM", description: "업무 해석, 계획 제안, 진행 조율에 사용합니다.", backend: "claude-cli", model: "sonnet-5", baseUrl: "", cliPath: "", modelOptions: [], loadingModels: false },
+  { target: "worker", label: "Worker / Developer", description: "코드 작성, 수정, 실행 등 실제 작업에 사용합니다.", backend: "codex-cli", model: "gpt-5", baseUrl: "", cliPath: "", modelOptions: [], loadingModels: false },
+  { target: "reviewer", label: "Reviewer / QA", description: "검증, 위험 확인, 완료 조건 검토에 사용합니다.", backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b", baseUrl: "https://integrate.api.nvidia.com/v1", cliPath: "", modelOptions: [], loadingModels: false },
+];
+
+function targetLabel(target: BindingTarget): string {
+  return target === "company" ? "company" : `role:${target}`;
+}
+
+function needsBaseUrl(backend: AgentBackendType): boolean {
+  return backend === "openai-compatible" || backend === "legacy-nvidia";
+}
+
+function needsCliPath(backend: AgentBackendType): boolean {
+  return backend === "claude-cli" || backend === "codex-cli";
+}
+
+function modelPlaceholder(backend: AgentBackendType): string {
+  if (backend === "openai-compatible") return "nvidia/nemotron-3-ultra-550b-a55b";
+  if (backend === "claude-cli") return "sonnet-5";
+  if (backend === "codex-cli") return "gpt-5";
+  return "phase0-model";
+}
+
+export default function BackendSettingsPage() {
+  const { actorId, role } = useSession();
+  const toast = useToast();
+  const [params, setParams] = useSearchParams();
+  const [companyId, setCompanyId] = useState(() => params.get("companyId") ?? localStorage.getItem("agent-company-os.lastCompany") ?? "");
+  const [companies, setCompanies] = useState<Array<CompanyRecord & { role: string }>>([]);
+  const [configs, setConfigs] = useState<EngineConfig[]>(DEFAULT_CONFIGS);
+  const [bindings, setBindings] = useState<AgentBinding[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isAdmin = role === "admin" || companies.find(item => item.id === companyId)?.role === "owner";
+  const changedSummary = useMemo(() => configs.map(config => `${config.label}: ${config.backend} / ${config.model || "모델 미선택"}`), [configs]);
+
+  function updateConfig(target: BindingTarget, patch: Partial<EngineConfig>) {
+    setConfigs(items => items.map(item => item.target === target ? { ...item, ...patch } : item));
+  }
+
+  function applyExistingBindings(nextBindings: AgentBinding[]) {
+    setConfigs(DEFAULT_CONFIGS.map(config => {
+      const binding = config.target === "company"
+        ? nextBindings.find(item => item.targetKind === "company")
+        : nextBindings.find(item => item.targetKind === "role" && item.targetId === config.target);
+      if (!binding) return config;
+      const bindingConfig = binding.config as { baseUrl?: string; cliPath?: string };
+      return { ...config, backend: binding.backend, model: binding.modelId, baseUrl: bindingConfig.baseUrl ?? config.baseUrl, cliPath: bindingConfig.cliPath ?? "" };
+    }));
+  }
+
+  async function load(id = companyId) {
+    if (!id) return;
+    setBusy(true); setError(null);
+    try {
+      const nextBindings = await apiGet<AgentBinding[]>(`/api/companies/${encodeURIComponent(id)}/agent-bindings?actor=${encodeURIComponent(actorId)}`);
+      setBindings(nextBindings);
+      applyExistingBindings(nextBindings);
+      setCompanyId(id);
+      localStorage.setItem("agent-company-os.lastCompany", id);
+      setParams({ companyId: id }, { replace: true });
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  }
+
+  useEffect(() => {
+    void apiGet<Array<CompanyRecord & { role: string }>>(`/api/companies?actor=${encodeURIComponent(actorId)}`)
+      .then(items => {
+        const active = items.filter(item => item.status === "active");
+        setCompanies(active);
+        const selected = active.some(item => item.id === companyId) ? companyId : active[0]?.id ?? "";
+        if (selected) void load(selected);
+      })
+      .catch(e => setError(e instanceof Error ? e.message : String(e)));
+  }, [actorId]);
+
+  async function loadModels(target: BindingTarget) {
+    const config = configs.find(item => item.target === target);
+    if (!config) return;
+    updateConfig(target, { loadingModels: true });
+    setError(null);
+    try {
+      const result = await apiPost<Record<string, string[]>>("/api/agent-backend/models", {
+        backend: config.backend,
+        ...(config.baseUrl.trim() ? { baseUrl: config.baseUrl.trim() } : {}),
+        ...(config.cliPath.trim() ? { cliPath: config.cliPath.trim() } : {}),
+      });
+      const list = Object.values(result).flat();
+      updateConfig(target, { modelOptions: list, model: list.length && !list[0]!.startsWith("error:") ? list[0]! : config.model });
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { updateConfig(target, { loadingModels: false }); }
+  }
+
+  async function saveConfig(config: EngineConfig) {
+    if (!companyId || !config.model.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      await apiPost(`/api/companies/${encodeURIComponent(companyId)}/agent-bindings`, {
+        actorId,
+        targetKind: config.target === "company" ? "company" : "role",
+        targetId: config.target === "company" ? companyId : config.target,
+        backend: config.backend,
+        modelId: config.model.trim(),
+        config: {
+          ...(needsBaseUrl(config.backend) && config.baseUrl.trim() ? { baseUrl: config.baseUrl.trim() } : {}),
+          ...(needsCliPath(config.backend) && config.cliPath.trim() ? { cliPath: config.cliPath.trim() } : {}),
+        },
+      });
+      toast(`${config.label} 설정을 저장했습니다. 다음 Run부터 적용됩니다.`);
+      await load(companyId);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  }
+
+  async function saveAll() {
+    for (const config of configs) await saveConfig(config);
+  }
+
+  return <div>
+    <PageHeader title="설정 · AI 엔진" description="일반 사용자의 업무 위임 흐름과 분리된 관리자용 backend/model 설정입니다." />
+
+    <section className="card">
+      <div className="row">
+        <label className="inline">회사
+          <select value={companyId} onChange={e => void load(e.target.value)}>
+            <option value="">회사를 선택하세요</option>
+            {companies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.role}</option>)}
+          </select>
+        </label>
+        <button disabled={busy || !companyId} onClick={() => void load()}>{busy ? "불러오는 중…" : "설정 새로고침"}</button>
+        <Link className="button-link" to={companyId ? `/company?companyId=${encodeURIComponent(companyId)}` : "/company"}>회사 홈</Link>
+        <Link className="button-link" to={companyId ? `/employees?companyId=${encodeURIComponent(companyId)}` : "/employees"}>직원·AI팀</Link>
+      </div>
+      {error && <p className="error" role="alert">{error}</p>}
+      {!isAdmin && <p className="error">관리자 또는 회사 Owner만 AI 엔진 설정을 변경할 수 있습니다.</p>}
+    </section>
+
+    <section className="card" aria-label="AI 엔진 운영 원칙">
+      <h2>운영 원칙</h2>
+      <div className="measurement-guidance"><strong>모델 설정은 일반 사용자의 기본 흐름이 아닙니다.</strong><span>사용자는 회사 홈에서 업무를 맡기고, 이 화면은 관리자가 회사 기본값과 역할별 AI 엔진을 조정할 때만 사용합니다.</span></div>
+      <div className="badge-row">
+        <span className="badge">회사 기본 → fallback</span>
+        <span className="badge">Planner/PM → 계획</span>
+        <span className="badge">Worker/Developer → 구현</span>
+        <span className="badge">Reviewer/QA → 검증</span>
+        <span className="badge">API key 원문 저장 금지</span>
+      </div>
+    </section>
+
+    <div className="stat-grid" style={{ marginTop: 16 }}>
+      {configs.map(config => {
+        const choices = Array.from(new Set([...config.modelOptions, ...(config.model.trim() ? [config.model.trim()] : [])]));
+        return <article key={config.target} className="card">
+          <div className="section-heading"><div><h2>{config.label}</h2><p>{config.description}</p></div><span className="badge">{targetLabel(config.target)}</span></div>
+          <label>Backend
+            <select value={config.backend} disabled={!isAdmin || busy} onChange={e => updateConfig(config.target, { backend: e.target.value as AgentBackendType, model: modelPlaceholder(e.target.value as AgentBackendType), modelOptions: [] })}>
+              {BACKENDS.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          {needsBaseUrl(config.backend) && <label>Base URL
+            <input value={config.baseUrl} disabled={!isAdmin || busy} placeholder="서버 .env 기본값을 쓰려면 비워두세요" onChange={e => updateConfig(config.target, { baseUrl: e.target.value })} />
+          </label>}
+          {needsCliPath(config.backend) && <label>CLI 경로
+            <input value={config.cliPath} disabled={!isAdmin || busy} placeholder="PATH에서 찾으려면 비워두세요" onChange={e => updateConfig(config.target, { cliPath: e.target.value })} />
+          </label>}
+          <label>Model
+            {choices.length > 1 ? <select value={config.model} disabled={!isAdmin || busy} onChange={e => updateConfig(config.target, { model: e.target.value })}>{choices.map(item => <option key={item} value={item}>{item}</option>)}</select> : <input value={config.model} disabled={!isAdmin || busy} onChange={e => updateConfig(config.target, { model: e.target.value })} />}
+          </label>
+          {config.modelOptions.some(item => item.startsWith("error:")) && <p className="error">{config.modelOptions.find(item => item.startsWith("error:"))}</p>}
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="secondary" disabled={!isAdmin || config.loadingModels} onClick={() => void loadModels(config.target)}>{config.loadingModels ? "모델 조회 중…" : "모델 목록 조회"}</button>
+            <button disabled={!isAdmin || busy || !config.model.trim()} onClick={() => void saveConfig(config)}>저장</button>
+          </div>
+        </article>;
+      })}
+    </div>
+
+    <section className="card" style={{ marginTop: 16 }}>
+      <div className="section-heading"><div><h2>저장 전 요약</h2><p>저장된 설정은 다음 Run부터 적용됩니다. 이미 시작된 Run의 snapshot은 바뀌지 않습니다.</p></div><button disabled={!isAdmin || busy || !companyId} onClick={() => void saveAll()}>전체 저장</button></div>
+      <ul>{changedSummary.map(item => <li key={item}>{item}</li>)}</ul>
+      <h3>현재 저장된 binding</h3>
+      <div className="binding-list">{bindings.map(binding => <article key={binding.id}><strong>{binding.targetKind}:{binding.targetId}</strong><span>{binding.backend} · {binding.modelId}</span><small>v{binding.version} · {binding.changedBy}</small></article>)}{!bindings.length && <p className="empty-state">저장된 AI 엔진 설정이 없습니다.</p>}</div>
+    </section>
+  </div>;
+}

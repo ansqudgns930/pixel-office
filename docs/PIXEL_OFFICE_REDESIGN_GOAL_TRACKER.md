@@ -100,7 +100,7 @@ Acceptance criteria:
 
 ### UX-G — 설정 > AI 엔진 구현
 
-Status: **Pending**
+Status: **Partial Done — BackendSettings page, route, model listing, and binding saves added**
 
 Scope:
 - `BackendSettingsPage.tsx`
@@ -184,5 +184,18 @@ Acceptance criteria:
 - Added selected-room work list with direct navigation to execution/project evidence.
 - Routed approval/high-priority alerts to the Decision Inbox instead of only execution details.
 - Updated advanced office copy to clarify it is operator-only live-view administration.
+- Ran: `npm --prefix apps/web run build`
+- Result: PASS
+
+### 2026-07-20 — UX-G first vertical slice
+
+- Added `BackendSettingsPage.tsx` as administrator-facing AI engine settings.
+- Added route `/settings/backend`.
+- Added admin nav item `설정`.
+- Exposed company default, Planner/PM, Worker/Developer, Reviewer/QA backend/model cards.
+- Wired model listing to existing `/api/agent-backend/models` endpoint.
+- Wired saves to existing company agent-bindings endpoint for company and role targets.
+- Added save summary and current binding list.
+- Kept API key out of UI storage/binding config; baseUrl/cliPath only are saved when present.
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS
