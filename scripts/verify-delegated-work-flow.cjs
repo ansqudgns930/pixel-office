@@ -71,13 +71,15 @@ async function main() {
       fs.writeFileSync(path.join(outDir, 'launch-timeout.txt'), await page.locator('body').innerText());
       throw error;
     }
-    await page.locator('.goals-page, body').first().waitFor({ timeout: 15000 });
+    await page.getByText('업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', { exact: true }).waitFor({ timeout: 15000 });
     await page.screenshot({ path: path.join(outDir, '02-goals-after-launch.png'), fullPage: true });
     const url = new URL(page.url());
     const goalId = url.searchParams.get('goalId');
     if (!goalId) throw new Error(`goalId missing after launch: ${page.url()}`);
     const goalsText = await page.locator('body').innerText();
-    if (!goalsText.includes('맡긴 일') && !goalsText.includes('Goal')) throw new Error('goals page did not render delegated work context');
+    for (const required of ['맡긴 일', '업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', '진행 단계', '다음 액션']) {
+      if (!goalsText.includes(required)) throw new Error(`goals page missing delegated-work copy: ${required}`);
+    }
 
     const goalSnapshot = await api(`/api/companies/${encodeURIComponent(companyId)}/goals/${encodeURIComponent(goalId)}?actor=${encodeURIComponent(actorId)}`);
     const delivery = await api(`/api/companies/${encodeURIComponent(companyId)}/goals/${encodeURIComponent(goalId)}/delivery-process?actor=${encodeURIComponent(actorId)}`);

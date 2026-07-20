@@ -323,3 +323,19 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — GoalsPage delegated-work framing slice
+
+- Reframed `GoalsPage` from `회사 목표` to `맡긴 일`.
+- Added delegated-work explainer card: `업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다`.
+- Changed portfolio/list copy to `DELEGATED WORK`, `맡긴 일`, `업무 목록`, `진행 단계`, and `다음 액션`.
+- Updated toolbar wording: `결정 필요`, `회사 홈`, `픽셀 오피스 Live View`.
+- Updated empty/create states from goal-centric copy to direct work delegation copy.
+- Updated automation copy to `업무 위임에서 실행까지`.
+- Extended delegated-work E2E to wait for GoalsPage delegated-work copy before asserting downstream state.
+- Extended visual QA smoke with `delegated-work-goals` route.
+- Found an E2E timing issue where route URL changed before React-rendered text was ready; fixed test to wait on delegated-work copy instead of raw body.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
