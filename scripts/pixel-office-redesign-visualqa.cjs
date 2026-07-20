@@ -32,7 +32,7 @@ async function main() {
     { name: 'decision-inbox', url: `/reviews?companyId=${companyId}`, required: ['결정 필요', '지금 결정 필요', '운영 원칙'] },
     { name: 'pixel-live-view', url: `/pixel-office?companyId=${companyId}`, required: ['진행 상황 Live View', '새 업무 맡기기', '결정 필요 처리', '직원·AI팀 보기'] },
     { name: 'pixel-goal-focus', url: `/pixel-office?companyId=${companyId}&goalId=demo-company-goal`, required: ['선택 목표 추적 중', '목표 상세', '결정 필요', '결과·활동', '진행 업무'] },
-    { name: 'backend-settings', url: `/settings/backend?companyId=${companyId}`, required: ['설정 · AI 엔진', '회사 기본 AI 엔진', 'Planner / PM', 'Worker / Developer', 'Reviewer / QA', '저장 전 요약'] },
+    { name: 'backend-settings', url: `/settings/backend?companyId=${companyId}`, required: ['설정 · AI 엔진', '회사 기본 AI 엔진', 'Planner / PM', 'Worker / Developer', 'Reviewer / QA', '저장 전 요약', 'Live Run snapshot 검증'] },
   ];
   const results = [];
   for (const item of checks) {

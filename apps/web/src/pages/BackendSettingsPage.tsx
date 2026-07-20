@@ -4,7 +4,7 @@ import PageHeader from "../components/PageHeader.tsx";
 import { useSession } from "../auth/SessionContext.tsx";
 import { apiGet, apiPost } from "../api.ts";
 import { useToast } from "../components/ToastContext.tsx";
-import type { AgentBackendType, AgentBinding, CompanyRecord } from "../types.ts";
+import type { AgentBackendType, AgentBinding, CompanyRecord, ResolvedAgentBinding } from "../types.ts";
 
 type BindingTarget = "company" | "planner" | "worker" | "reviewer";
 
@@ -18,6 +18,14 @@ interface EngineConfig {
   cliPath: string;
   modelOptions: string[];
   loadingModels: boolean;
+}
+
+interface VerificationResult {
+  status: "pass" | "fail";
+  goalId: string;
+  runId: string;
+  snapshots: ResolvedAgentBinding[];
+  failures: string[];
 }
 
 const BACKENDS: AgentBackendType[] = ["openai-compatible", "claude-cli", "codex-cli", "standalone", "legacy-nvidia"];
@@ -56,6 +64,7 @@ export default function BackendSettingsPage() {
   const [companies, setCompanies] = useState<Array<CompanyRecord & { role: string }>>([]);
   const [configs, setConfigs] = useState<EngineConfig[]>(DEFAULT_CONFIGS);
   const [bindings, setBindings] = useState<AgentBinding[]>([]);
+  const [verification, setVerification] = useState<VerificationResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -146,6 +155,55 @@ export default function BackendSettingsPage() {
     for (const config of configs) await saveConfig(config);
   }
 
+  async function verifyLiveRunSnapshot() {
+    if (!companyId || isDemoCompany) return;
+    setBusy(true); setError(null); setVerification(null);
+    try {
+      for (const config of configs) {
+        if (!config.model.trim()) continue;
+        await apiPost(`/api/companies/${encodeURIComponent(companyId)}/agent-bindings`, {
+          actorId,
+          targetKind: config.target === "company" ? "company" : "role",
+          targetId: config.target === "company" ? companyId : config.target,
+          backend: config.backend,
+          modelId: config.model.trim(),
+          config: {
+            ...(needsBaseUrl(config.backend) && config.baseUrl.trim() ? { baseUrl: config.baseUrl.trim() } : {}),
+            ...(needsCliPath(config.backend) && config.cliPath.trim() ? { cliPath: config.cliPath.trim() } : {}),
+          },
+        });
+      }
+      const goalId = crypto.randomUUID();
+      const launch = await apiPost<{ goal: { id: string }; provisioning: { runId: string } }>(`/api/companies/${encodeURIComponent(companyId)}/goals/launch`, {
+        actorId,
+        id: goalId,
+        title: "AI Engine live snapshot verification",
+        description: "Verify selected role backend/model settings are frozen into a live Run snapshot.",
+        ownerId: actorId,
+        completionCriteria: ["planner, worker, and reviewer bindings are captured in Run snapshot"],
+        budgetLimit: 1,
+        requestedRisk: "low",
+        requestedPaths: ["src"],
+      });
+      const snapshots = await apiGet<ResolvedAgentBinding[]>(`/api/runs/${encodeURIComponent(launch.provisioning.runId)}/agent-bindings?actor=${encodeURIComponent(actorId)}`);
+      const failures: string[] = [];
+      for (const roleTarget of ["planner", "worker", "reviewer"] as const) {
+        const expected = configs.find(item => item.target === roleTarget);
+        const actual = snapshots.find(item => item.role === roleTarget);
+        if (!expected) continue;
+        if (!actual) { failures.push(`${roleTarget}: snapshot 없음`); continue; }
+        if (actual.backend !== expected.backend) failures.push(`${roleTarget}: backend expected ${expected.backend}, actual ${actual.backend}`);
+        if (actual.modelId !== expected.model.trim()) failures.push(`${roleTarget}: model expected ${expected.model.trim()}, actual ${actual.modelId}`);
+        if (actual.resolution === "demo-mode") failures.push(`${roleTarget}: demo-mode로 resolve됨`);
+      }
+      const result = { status: failures.length ? "fail" : "pass", goalId: launch.goal.id, runId: launch.provisioning.runId, snapshots, failures } as VerificationResult;
+      setVerification(result);
+      toast(failures.length ? "Live Run snapshot 검증에서 불일치가 발견되었습니다." : "Live Run snapshot 검증이 통과했습니다.");
+      await load(companyId);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  }
+
   return <div>
     <PageHeader title="설정 · AI 엔진" description="일반 사용자의 업무 위임 흐름과 분리된 관리자용 backend/model 설정입니다." />
 
@@ -208,10 +266,11 @@ export default function BackendSettingsPage() {
     </div>
 
     <section className="card" style={{ marginTop: 16 }}>
-      <div className="section-heading"><div><h2>저장 전 요약</h2><p>저장된 설정은 다음 Run부터 적용됩니다. 이미 시작된 Run의 snapshot은 바뀌지 않습니다.</p></div><button disabled={!isAdmin || busy || !companyId} onClick={() => void saveAll()}>전체 저장</button></div>
+      <div className="section-heading"><div><h2>저장 전 요약</h2><p>저장된 설정은 다음 Run부터 적용됩니다. 이미 시작된 Run의 snapshot은 바뀌지 않습니다. 실제 적용 여부는 live 회사 Run의 agent binding snapshot으로 확인하세요.</p></div><div className="row"><button disabled={!isAdmin || busy || !companyId} onClick={() => void saveAll()}>전체 저장</button><button className="secondary" disabled={!isAdmin || busy || !companyId || isDemoCompany} onClick={() => void verifyLiveRunSnapshot()}>Live Run snapshot 검증</button></div></div>
       <ul>{changedSummary.map(item => <li key={item}>{item}</li>)}</ul>
       <h3>현재 저장된 binding</h3>
       <p className="empty-state">운영 검증 명령: <code>powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-live-binding-snapshot.ps1</code></p>
+      {verification && <section className={`measurement-guidance ${verification.status === "pass" ? "ready" : "blocked"}`}><strong>{verification.status === "pass" ? "Live Run snapshot 검증 통과" : "Live Run snapshot 검증 실패"}</strong><span>Run {verification.runId} · Goal {verification.goalId} · {verification.snapshots.map(item => `${item.role}: ${item.backend}/${item.modelId}/${item.resolution}`).join(" · ")}</span>{verification.failures.length > 0 && <ul>{verification.failures.map(item => <li key={item}>{item}</li>)}</ul>}</section>}
       <div className="binding-list">{bindings.map(binding => <article key={binding.id}><strong>{binding.targetKind}:{binding.targetId}</strong><span>{binding.backend} · {binding.modelId}</span><small>v{binding.version} · {binding.changedBy}</small></article>)}{!bindings.length && <p className="empty-state">저장된 AI 엔진 설정이 없습니다.</p>}</div>
     </section>
   </div>;

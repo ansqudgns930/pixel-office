@@ -278,3 +278,14 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — Backend Settings live snapshot verification button
+
+- Added `Live Run snapshot 검증` action to Backend Settings.
+- The action saves current company/default and role settings, launches a small live verification goal/run, then checks `/api/runs/:runId/agent-bindings`.
+- Verification compares planner/worker/reviewer snapshot backend/model values against current UI settings and reports pass/fail inline.
+- Disabled the action for demo companies because demo-mode intentionally resolves to `standalone · phase0-model`.
+- Extended visual QA smoke to assert the new button copy on desktop and mobile Backend Settings.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
