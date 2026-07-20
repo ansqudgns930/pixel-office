@@ -88,7 +88,7 @@ Acceptance criteria:
 
 ### UX-F — Pixel Office live view 강화
 
-Status: **Pending**
+Status: **Partial Done — live view framing and navigation actions added; deeper spatial interactions pending**
 
 Scope:
 - 회사 홈/맡긴 일 카드에서 `픽셀오피스로 보기`
@@ -173,5 +173,16 @@ Acceptance criteria:
 - Added direct links to company home, delegated work, and meetings.
 - Updated decision-copy CTAs: approve and continue, revise and bring back, hold, resume decision.
 - Updated company home labels from approval-centric wording to decision-needed wording.
+- Ran: `npm --prefix apps/web run build`
+- Result: PASS
+
+### 2026-07-20 — UX-F first vertical slice
+
+- Reframed Pixel Office page as a live view, not the primary workflow.
+- Added live-view guidance and direct CTAs to company home, delegated work, decision inbox, staff/team, and activity.
+- Renamed toolbar links from system/console wording to product-language destinations.
+- Added selected-room work list with direct navigation to execution/project evidence.
+- Routed approval/high-priority alerts to the Decision Inbox instead of only execution details.
+- Updated advanced office copy to clarify it is operator-only live-view administration.
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS

@@ -858,6 +858,17 @@ export default function PixelOfficePage() {
     if (params.get("goalId")) query.set("goalId", params.get("goalId")!);
     return `/execution?${query.toString()}`;
   }
+  function decisionInboxUrl() {
+    const query = new URLSearchParams({ companyId });
+    if (params.get("goalId")) query.set("goalId", params.get("goalId")!);
+    return `/reviews?${query.toString()}`;
+  }
+  function alertTargetUrl(alert: OfficeAlert) {
+    if (alert.priority === "high" || alert.type.startsWith("approval.") || alert.type.includes("approval")) return decisionInboxUrl();
+    if (alert.runId) return executionUrl(alert.runId);
+    if (alert.taskId && projection?.projectId) return `/projects?projectId=${encodeURIComponent(projection.projectId)}&companyId=${encodeURIComponent(companyId)}`;
+    return decisionInboxUrl();
+  }
   useEffect(() => {
     const agentId = params.get("agentId");
     if (agentId) selectAgent(agentId);
@@ -973,7 +984,7 @@ export default function PixelOfficePage() {
     <div className="pixel-office-page">
       <PageHeader
         title="픽셀 오피스"
-        description="실제 업무 이벤트와 직원 상태를 실시간으로 연결합니다."
+        description="업무 절차가 아니라 AI 회사의 진행 상황을 보는 live view입니다."
       />
       <section
         className="office-toolbar card"
@@ -991,19 +1002,19 @@ export default function PixelOfficePage() {
             className="button-link"
             to={`/company?companyId=${encodeURIComponent(companyId)}`}
           >
-            회사 상세
+            회사 홈
           </Link>
           <Link
             className="button-link"
             to={`/goals?companyId=${encodeURIComponent(companyId)}${params.get("goalId") ? `&goalId=${encodeURIComponent(params.get("goalId")!)}` : ""}`}
           >
-            목표 전체 현황
+            맡긴 일
           </Link>
           <Link
             className="button-link"
             to={`/meetings?companyId=${encodeURIComponent(companyId)}${params.get("goalId") ? `&goalId=${encodeURIComponent(params.get("goalId")!)}` : ""}`}
           >
-            회의 참여
+            회의
           </Link>
           {projection?.projectId && (
             <Link
@@ -1023,6 +1034,21 @@ export default function PixelOfficePage() {
             : connected
               ? "실시간 연결됨"
               : "연결 대기"}
+        </div>
+      </section>
+      <section className="card" aria-label="픽셀 오피스 live view 안내">
+        <div className="section-heading">
+          <div>
+            <h2>진행 상황 Live View</h2>
+            <p>픽셀 오피스는 업무를 시작하는 필수 단계가 아니라, AI 회사가 계획·작업·검증·결정을 어떻게 진행 중인지 보는 창입니다.</p>
+          </div>
+          <Link className="button-link" to={`/company?companyId=${encodeURIComponent(companyId)}`}>새 업무 맡기기</Link>
+        </div>
+        <div className="badge-row">
+          <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}${params.get("goalId") ? `&goalId=${encodeURIComponent(params.get("goalId")!)}` : ""}`}>맡긴 일 확인</Link>
+          <Link className="button-link" to={`/reviews?companyId=${encodeURIComponent(companyId)}`}>결정 필요 처리</Link>
+          <Link className="button-link" to={`/employees?companyId=${encodeURIComponent(companyId)}`}>직원·AI팀 보기</Link>
+          <Link className="button-link" to={`/activity?companyId=${encodeURIComponent(companyId)}`}>결과·활동 보기</Link>
         </div>
       </section>
       <details className="demo-tools card">
@@ -1134,7 +1160,7 @@ export default function PixelOfficePage() {
             <button
               key={`${alert.runId ?? alert.taskId}:${alert.type}:${alert.priority}`}
               className={`office-alert priority-${alert.priority}`}
-              onClick={() => alert.runId && navigate(executionUrl(alert.runId))}
+              onClick={() => navigate(alertTargetUrl(alert))}
             >
               <strong>{alert.priority}</strong>
               <span>{eventLabel(alert.type)}</span>
@@ -1177,6 +1203,19 @@ export default function PixelOfficePage() {
               );
             })}
           </nav>
+          <section className="card" aria-label="선택한 방의 진행 업무">
+            <div className="section-heading"><div><h2>{ROOMS[activeRoom]?.shortLabel ?? "오피스"} 진행 업무</h2><p>방을 클릭해 단계별 업무를 보고, 필요한 화면으로 이동하세요.</p></div></div>
+            <div className="badge-row">
+              {agentWorkStates.filter(work => roomFor(work.phase) === ROOMS[activeRoom]?.id).map(work => (
+                <button key={work.key} className="linked-work" onClick={() => work.runId ? navigate(executionUrl(work.runId, work.projectId, work.agentId)) : work.projectId ? navigate(`/projects?projectId=${encodeURIComponent(work.projectId)}&companyId=${encodeURIComponent(companyId)}`) : undefined}>
+                  <strong>{work.agentId ?? "미배정"} · {phaseLabel[work.phase]}</strong>
+                  <span>{shortId(work.taskId ?? work.runId ?? work.key)}</span>
+                  <small>{work.runId ? "고급 실행 근거 보기" : "프로젝트 보기"}</small>
+                </button>
+              ))}
+              {!agentWorkStates.some(work => roomFor(work.phase) === ROOMS[activeRoom]?.id) && <span className="badge">현재 이 방에서 진행 중인 업무가 없습니다.</span>}
+            </div>
+          </section>
           <section
             className="office-canvas"
             aria-label={`CEO실, 개발실, QA실, 승인실로 구성된 픽셀 오피스. 실제 동시 업무 ${agentWorkStates.length}건`}
@@ -1235,7 +1274,7 @@ export default function PixelOfficePage() {
             className="button-link office-employees-link"
             to={`/employees?companyId=${encodeURIComponent(companyId)}`}
           >
-            전체 직원 현황
+            직원·AI팀 전체 보기
           </Link>
         </div>
         <aside className="office-timeline">
@@ -1264,7 +1303,7 @@ export default function PixelOfficePage() {
         className="advanced-office-wrap"
         open={companyId === "qa-company"}
       >
-        <summary>고급 오피스 운영 · 채용 · 전체 이벤트</summary>
+        <summary>고급 Live View 운영 · 채용 · 전체 이벤트</summary>
         <AdvancedOfficePanel companyId={companyId} actorId={actorId} />
       </details>
       {projection && (
@@ -1314,7 +1353,7 @@ export default function PixelOfficePage() {
               className="button-link"
               to={`/employees?companyId=${encodeURIComponent(companyId)}&agentId=${encodeURIComponent(selectedAgentId)}`}
             >
-              직원 전체 상세
+              직원·AI팀 상세
             </Link>
             <dl>
               <div>
@@ -1385,7 +1424,7 @@ export default function PixelOfficePage() {
                   )
                 }
               >
-                <strong>현재 Run 근거</strong>
+                <strong>고급 실행에서 Run 근거 보기</strong>
                 <span>{shortId(selectedWork.taskId ?? selectedWork.key)}</span>
                 <small>{shortId(selectedWork.runId)}</small>
               </button>
