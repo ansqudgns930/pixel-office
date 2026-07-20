@@ -16,12 +16,15 @@ interface GoalDraftResponse {
   warnings: string[];
 }
 
-interface WorkPlanPreview {
-  draft: GoalDraftResponse;
+interface StaffingPlanResponse {
   staff: string[];
   steps: string[];
   risk: "low" | "medium" | "high" | "critical";
   decisionExpectation: string;
+}
+
+interface WorkPlanPreview extends StaffingPlanResponse {
+  draft: GoalDraftResponse;
 }
 
 export default function CompanyPage() {
@@ -58,32 +61,6 @@ export default function CompanyPage() {
 
   useEffect(() => { void apiGet<Array<CompanyRecord&{role:string;projectCount:number}>>(`/api/companies?actor=${encodeURIComponent(actorId)}`).then(items=>{const received=Array.isArray(items),valid=(received?items:[]).filter(item=>item.status==="active");setCompanies(valid);const requested=params.get("companyId")||companyId,selected=valid.some(item=>item.id===requested)?requested:received?valid[0]?.id:requested;if(selected)void load(selected);else{setCompanyId("");setSnapshot(null);}}).catch(e=>{const requested=params.get("companyId")||companyId;if(requested)void load(requested);else setError(e instanceof Error?e.message:String(e));}); }, []);
 
-  function classifyWork(request: string) {
-    const lower = request.toLowerCase();
-    const isUi = /ui|ux|화면|디자인|레이아웃|버튼|랜딩|온보딩/.test(lower);
-    const isSecurity = /auth|인증|권한|보안|security|token|secret|비밀/.test(lower);
-    const isCopy = /문구|카피|copy|랜딩|버튼/.test(lower);
-    const isLarge = /전체|서비스|기획|전략|대규모|리팩터|architecture|구조/.test(lower);
-    const staff = new Set<string>();
-    if (isLarge) { staff.add("CEO"); staff.add("PM"); }
-    if (isUi) { staff.add("PM"); staff.add("Designer"); }
-    if (isCopy) staff.add("Copywriter");
-    if (isSecurity) { staff.add("PM"); staff.add("Security"); }
-    if (!staff.size) staff.add("Developer");
-    staff.add("Developer");
-    staff.add("QA");
-    const steps = [
-      "업무 목표와 완료 조건 정리",
-      isUi ? "현재 화면/사용자 흐름 점검" : "관련 코드와 현재 상태 확인",
-      isSecurity ? "권한·보안 위험 지점 확인" : "실행 범위와 변경 계획 작성",
-      "필요한 변경 수행",
-      "빌드·테스트·검증",
-      "검증된 결과 보고와 다음 작업 추천",
-    ];
-    const risk = isSecurity || isLarge ? "high" : isUi || isCopy ? "medium" : "low";
-    return { staff: Array.from(staff), steps, risk, decisionExpectation: isSecurity || isLarge ? "있음 — 위험/범위 변경 시 확인 요청" : "낮음 — 검증 실패 또는 범위 변경 시에만 요청" } as const;
-  }
-
   function proposeWorkPlan() {
     return guarded(async () => {
       const request = workRequest.trim();
@@ -92,9 +69,12 @@ export default function CompanyPage() {
         toast("먼저 AI 회사에 맡길 업무를 입력하세요.");
         return;
       }
-      const draft = await apiPost<GoalDraftResponse>(`/api/companies/${encodeURIComponent(companyId)}/goals/draft`, { actorId, rough: request });
+      const [draft, staffing] = await Promise.all([
+        apiPost<GoalDraftResponse>(`/api/companies/${encodeURIComponent(companyId)}/goals/draft`, { actorId, rough: request }),
+        apiPost<StaffingPlanResponse>(`/api/companies/${encodeURIComponent(companyId)}/staffing/plan`, { actorId, rough: request }),
+      ]);
       const completionCriteria = draft.completionCriteria.length ? draft.completionCriteria : ["요청한 업무가 적용되어야 합니다.", "빌드 또는 관련 검증이 통과해야 합니다.", "결과 보고에 변경 내용과 검증 근거가 포함되어야 합니다."];
-      setPlanPreview({ draft: { ...draft, completionCriteria }, ...classifyWork(request) });
+      setPlanPreview({ draft: { ...draft, completionCriteria }, ...staffing });
     });
   }
 

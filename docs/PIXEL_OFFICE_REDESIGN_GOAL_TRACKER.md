@@ -213,3 +213,16 @@ Acceptance criteria:
 - Mobile smoke viewport: `390x844` for company home and backend settings.
 - Result: PASS — no required copy missing, no horizontal overflow, no browser console/page errors.
 - Screenshots/report written under `.runtime/visualqa/pixel-office-redesign/`.
+
+### 2026-07-20 — Dynamic Staffing Rules shared/API slice
+
+- Added shared package: `packages/staffing-rules/src/index.ts`.
+- Moved Company Home local work classification into `deriveWorkStaffingPlan()`.
+- Added API endpoint: `POST /api/companies/:companyId/staffing/plan`.
+- Endpoint enforces company view permission before returning staffing/risk/decision expectation.
+- Updated Company Home plan proposal to request draft goal and staffing plan through backend APIs.
+- Verified API with UI+security request: returned PM, Designer, Security, Developer, QA and `risk: high`.
+- Ran: `npm run build`
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

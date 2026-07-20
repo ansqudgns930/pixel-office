@@ -21,6 +21,7 @@ import { DelegationService } from "../../../packages/delegation/src/index.js";
 import type { MeetingAgentRunner,MeetingRunnerLimits } from "../../../packages/meeting-runner/src/index.js";
 import { MeetingSemanticSummaryService } from "../../../packages/meeting-semantics/src/index.js";
 import { AgentReportInterpreter } from "../../../packages/agent-reporting/src/index.js";
+import { deriveWorkStaffingPlan } from "../../../packages/staffing-rules/src/index.js";
 
 export interface ControlPlaneActions {
   approvePlan(runId: string, userId: string): Promise<void> | void;
@@ -78,6 +79,7 @@ export class ControlPlaneApi {
       if (request.method === "POST" && url.pathname === "/api/workspaces") { const body=await this.body<{id:string;name:string}>(request);this.needProjects().createWorkspace(body.id,body.name);return this.json(response,201,{id:body.id}); }
       if (request.method === "POST" && url.pathname === "/api/projects") { const body=await this.body<{id:string;workspaceId:string;name:string;repoPath:string;defaultBranch:string;runtimePath:string;organizationProfile:unknown;budgetLimit:number;ownerId:string}>(request);const {ownerId,...input}=body;return this.json(response,201,this.needProjects().createProject(input,principalId(ownerId))); }
       if(request.method==="POST"&&url.pathname==="/api/companies"){const body=await this.body<{id:string;name:string;workspaceId:string;budgetLimit:number;mandatoryReviews:string[];mandatoryApprovals:string[];allowedTools:string[];ownerId:string;mode?:"demo"|"live"}>(request),{ownerId,...input}=body;return this.json(response,201,this.needCompanies().createCompany(input,principalId(ownerId)));}
+      const staffingPlan=url.pathname.match(/^\/api\/companies\/([^/]+)\/staffing\/plan$/);if(staffingPlan&&request.method==="POST"){const companyId=decodeURIComponent(staffingPlan[1]!),body=await this.body<{actorId:string;rough:string}>(request);this.needCompanies().require(companyId,principalId(body.actorId),"view");return this.json(response,200,deriveWorkStaffingPlan(body.rough));}
       const goalDraft=url.pathname.match(/^\/api\/companies\/([^/]+)\/goals\/draft$/);if(goalDraft&&request.method==="POST"){if(!this.actions.draftGoal)throw new Error("Goal drafting unavailable");const companyId=decodeURIComponent(goalDraft[1]!),body=await this.body<{actorId:string;rough:string}>(request);this.needCompanies().require(companyId,principalId(body.actorId),"view");return this.json(response,200,await this.actions.draftGoal(body.rough));}
       const goalLaunch=url.pathname.match(/^\/api\/companies\/([^/]+)\/goals\/launch$/);if(goalLaunch&&request.method==="POST"){
         const companyId=decodeURIComponent(goalLaunch[1]!),body=await this.body<{actorId:string;id:string;title:string;description?:string;ownerId:string;completionCriteria:string[];budgetLimit:number;dueAt?:string|null;repoPath?:string;requestedPaths?:string[];requestedRisk?:"low"|"medium"|"high"|"critical"}>(request),actor=principalId(body.actorId),companies=this.needCompanies(),projects=this.needProjects(),company=companies.company(companyId);
