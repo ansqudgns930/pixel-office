@@ -96,7 +96,8 @@ async function main() {
     await page.screenshot({ path: path.join(outDir, '04-pixel-office-goal-focus.png'), fullPage: true });
 
     await page.goto(`${webBase}/activity?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(goalId)}`, { waitUntil: 'domcontentloaded' });
-    await page.getByText('결과·활동').or(page.getByText('실시간 연결')).waitFor({ timeout: 15000 });
+    await page.getByRole('heading', { name: '결과·활동' }).waitFor({ timeout: 15000 });
+    await page.getByText('선택한 맡긴 일의 결과와 활동을 보는 중입니다', { exact: true }).waitFor({ timeout: 15000 });
     await page.screenshot({ path: path.join(outDir, '05-activity.png'), fullPage: true });
 
     const report = { generatedAt: new Date().toISOString(), companyId, goalId, deliveryProcessId: delivery.process?.id ?? delivery.id ?? null, url: page.url(), errors };

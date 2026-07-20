@@ -339,3 +339,18 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — ActivityPage results/activity framing slice
+
+- Reframed `ActivityPage` from `통합 검색·알림` to `결과·활동`.
+- Updated description to emphasize result reports, validation evidence, risk signals, meetings, and decisions.
+- Added goal-focus context when `goalId` is present: `선택한 맡긴 일의 결과와 활동을 보는 중입니다`.
+- Added quick links from goal-focused activity to delegated-work detail, Pixel Office live view, and Decision Inbox.
+- Renamed tabs/copy toward user-facing concepts: `활동 신호`, `결과 보고`, `근거 검색`.
+- Fixed a real URL-state bug: ActivityPage load/search/tab updates were dropping `goalId`, causing the goal-focus context to disappear after data load.
+- Extended delegated-work E2E to assert Activity goal-focus copy.
+- Extended visual QA smoke with `activity-results` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
