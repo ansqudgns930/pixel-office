@@ -1,0 +1,20 @@
+const {chromium}=require("playwright-core");
+const path=require("node:path");
+const fs=require("node:fs");
+
+async function main(){
+ const executable=process.env.BROWSER_AUTOMATION_EXECUTABLE,base=process.env.QA_WEB_BASE||"http://127.0.0.1:5173",out=process.env.QA_OUTPUT_DIR||path.join(process.cwd(),"outputs","owner-decision-center");
+ if(!executable)throw new Error("BROWSER_AUTOMATION_EXECUTABLE required");fs.mkdirSync(out,{recursive:true});
+ const browser=await chromium.launch({executablePath:executable,headless:true}),errors=[];
+ try{const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage();page.on("pageerror",e=>errors.push(`page: ${e.message}`));page.on("console",m=>{if(m.type()==="error")errors.push(`console: ${m.text()}`)});page.on("response",r=>{if(r.status()>=400)errors.push(`http ${r.status()}: ${r.url()}`)});
+  await page.goto(`${base}/login`,{waitUntil:"domcontentloaded"});await page.getByLabel("아이디").fill("admin");await page.getByLabel("비밀번호").fill("textadmin");await page.getByRole("button",{name:"로그인",exact:true}).click();await page.getByRole("link",{name:"오너 결정",exact:true}).waitFor();await page.getByRole("link",{name:"오너 결정",exact:true}).click();await page.getByRole("heading",{name:"오너 결정 센터",exact:true}).waitFor();if(process.env.QA_COMPANY_ID){await page.goto(`${base}/reviews?companyId=${encodeURIComponent(process.env.QA_COMPANY_ID)}`,{waitUntil:"domcontentloaded"});await page.getByRole("heading",{name:"오너 결정 센터",exact:true}).waitFor();await new Promise(resolve=>setTimeout(resolve,1000));}
+  const companySelect=page.getByLabel("회사",{exact:true}),options=await companySelect.locator("option").evaluateAll(nodes=>nodes.map(x=>({value:x.value,label:x.textContent||""})));let populated=null;
+  if(process.env.QA_COMPANY_ID){populated=(await page.locator(".owner-review-queue>button").count())?{value:process.env.QA_COMPANY_ID,label:process.env.QA_COMPANY_ID}:null;}else for(const option of options){await companySelect.selectOption(option.value);await new Promise(resolve=>setTimeout(resolve,800));if(await page.locator(".owner-review-queue>button").count()){populated=option;break;}}
+  const metrics=async()=>page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,mainScrollWidth:document.querySelector(".app-main")?.scrollWidth,mainClientWidth:document.querySelector(".app-main")?.clientWidth,detailWidth:document.querySelector(".owner-review-detail")?.getBoundingClientRect().width,queue:document.querySelectorAll(".owner-review-queue>button").length,ready:document.querySelector(".packet-readiness")?.textContent?.trim()||null,approveDisabled:(document.querySelector(".owner-decision-panel button:last-child")||{}).disabled??null}));
+  await page.screenshot({path:path.join(out,"01-owner-decision-desktop.png"),fullPage:true});const desktop=await metrics();
+  let technical=null,evidence=null;if(populated){await page.getByRole("button",{name:"기술 검토",exact:true}).click();await page.locator(".app-main").evaluate(el=>{el.scrollTop=0});await page.screenshot({path:path.join(out,"02-owner-technical-desktop.png"),fullPage:true});technical=await metrics();await page.getByRole("button",{name:"전체 근거",exact:true}).click();await page.locator(".app-main").evaluate(el=>{el.scrollTop=0});await page.screenshot({path:path.join(out,"03-owner-evidence-desktop.png"),fullPage:true});evidence=await metrics();}
+  await page.setViewportSize({width:390,height:844});await new Promise(resolve=>setTimeout(resolve,400));await page.locator(".app-main").evaluate(el=>{el.scrollTop=0});await page.screenshot({path:path.join(out,"04-owner-mobile.png"),fullPage:true});const mobile=await metrics();
+  const result={populatedCompany:populated,desktop,technical,evidence,mobile,errors};fs.writeFileSync(path.join(out,"report.json"),JSON.stringify(result,null,2));console.log(JSON.stringify(result));if(errors.length||desktop.scrollWidth>desktop.clientWidth||mobile.scrollWidth>mobile.clientWidth)process.exitCode=1;
+ }finally{await browser.close();}
+}
+main().catch(e=>{console.error(e);process.exit(1)});

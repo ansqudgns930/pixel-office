@@ -1,0 +1,9 @@
+node_modules/
+dist/
+outputs/*.json
+.tools/
+.phase1/
+fixtures/golden-repository/.git/
+.env
+.env.*
+!.env.production.example

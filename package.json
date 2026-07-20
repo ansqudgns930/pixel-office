@@ -1,0 +1,56 @@
+{
+  "name": "agent-company-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.17.0 <25",
+    "npm": ">=11.13.0 <12"
+  },
+  "scripts": {
+    "runtime:check": "node scripts/verify-runtime.cjs",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/tests/*.test.js",
+    "test:phase1": "node --test dist/tests/persistence.test.js dist/tests/runtime.test.js dist/tests/role-pipeline.test.js dist/tests/tool-worktree.test.js dist/tests/approval.test.js dist/tests/vertical-slice.test.js",
+    "test:redis": "node --test --test-concurrency=1 dist/tests/queue-integration.test.js dist/tests/run-worker-integration.test.js dist/tests/control-plane-integration.test.js",
+    "rehearse:redis": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/rehearse-redis-recovery.ps1",
+    "phase1:smoke": "node --test dist/tests/vertical-slice.test.js",
+    "phase2:smoke": "node --test dist/tests/artifact-graph.test.js dist/tests/context-builder.test.js dist/tests/impact-analysis.test.js dist/tests/merge-analysis.test.js dist/tests/control-plane-api.test.js dist/tests/vertical-slice.test.js",
+    "phase3:smoke": "node --test dist/tests/project-ops.test.js dist/tests/war-room-api.test.js dist/tests/phase3-vertical.test.js",
+    "phase4:smoke": "node --test dist/tests/company-ops.test.js dist/tests/company-command-center-api.test.js dist/tests/phase3-vertical.test.js",
+    "phase5:smoke": "node --test dist/tests/platform-ops.test.js dist/tests/platform-console-api.test.js dist/tests/company-command-center-api.test.js",
+    "phase6:smoke": "node --test dist/tests/operations.test.js dist/tests/auth-control-plane.test.js dist/tests/platform-console-api.test.js",
+    "p0:smoke": "node --test dist/tests/demo-bootstrap.test.js dist/tests/demo-scenario.test.js dist/tests/office-projection.test.js dist/tests/game-progression.test.js dist/tests/p0-playable-demo.test.js",
+    "p1:office-smoke": "node --test dist/tests/event-mapper.test.js dist/tests/event-backfill.test.js dist/tests/office-projection.test.js dist/tests/p1-office-live-events.test.js",
+    "p2:game-smoke": "node --test dist/tests/game-progression.test.js dist/tests/p2-game-progression.test.js",
+    "p3:execution-smoke": "node --test dist/tests/policy.test.js dist/tests/role-pipeline.test.js dist/tests/tool-worktree.test.js dist/tests/repository-tools.test.js dist/tests/approval.test.js dist/tests/revision-loop.test.js dist/tests/vertical-slice.test.js dist/tests/war-room-api.test.js",
+    "p4:intervention-smoke": "node --test dist/tests/p4-interventions.test.js dist/tests/p4-intervention-api.test.js dist/tests/p4-enforcement.test.js dist/tests/p4-pixel-intervention.test.js",
+    "p5:office-scale-smoke": "node --test dist/tests/p5-office-scale.test.js dist/tests/p5-office-api.test.js dist/tests/p5-visual-customization.test.js",
+    "web:build": "npm --prefix apps/web run build",
+    "p5:browser-qa": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-p5-browser-qa.ps1",
+    "milestone-b:browser-qa": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-milestone-b-browser-qa.ps1",
+    "milestone-c:browser-qa": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-milestone-c-browser-qa.ps1",
+    "goal-delivery:browser-qa": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-goal-delivery-browser-qa.ps1",
+    "performance:smoke": "node --test dist/tests/performance-accessibility.test.js",
+    "golden:roles": "node dist/apps/role-golden-evaluator/index.js",
+    "golden:meetings": "node dist/apps/meeting-golden-evaluator/index.js",
+    "control-plane": "node --env-file-if-exists=.env dist/apps/local-control-plane/index.js",
+    "ops:backup": "node dist/apps/operations-cli/index.js backup",
+    "ops:restore": "node dist/apps/operations-cli/index.js restore",
+    "ops:preflight": "node dist/apps/production-preflight/index.js",
+    "smoke": "node dist/apps/phase0-runner/index.js",
+    "phase1:live": "node dist/apps/phase1-evaluator/index.js",
+    "phase1:blind": "node dist/apps/phase1-evaluator/blind-review.js",
+    "verify": "npm run runtime:check && npm run typecheck && npm run build && npm run web:build && npm test && npm run phase1:smoke && npm run phase2:smoke && npm run phase3:smoke && npm run phase4:smoke && npm run phase5:smoke && npm run phase6:smoke && npm run p0:smoke && npm run p1:office-smoke && npm run p2:game-smoke && npm run p3:execution-smoke && npm run p4:intervention-smoke && npm run p5:office-scale-smoke && npm run performance:smoke && npm run p5:browser-qa && npm run milestone-b:browser-qa && npm run milestone-c:browser-qa"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "playwright-core": "1.61.1",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "bullmq": "^5.80.2",
+    "ioredis": "^5.11.1"
+  }
+}
