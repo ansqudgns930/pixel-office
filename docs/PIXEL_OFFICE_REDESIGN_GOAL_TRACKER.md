@@ -62,7 +62,7 @@ Acceptance criteria:
 
 ### UX-D — Staff Model 구현/노출
 
-Status: **Pending**
+Status: **Partial Done — core team UI and demo Designer added; backend staffing rules pending**
 
 Scope:
 - 기본 회사 구성에 Designer 추가
@@ -150,5 +150,17 @@ Acceptance criteria:
 - Enabled `이 계획으로 실행` and wired it to existing `/api/companies/:companyId/goals/launch` endpoint.
 - Launch now creates a delegated goal/run flow and navigates to `/goals` for follow-up.
 - Dynamic staffing is still UI-local classification; next backend work should formalize staffing rules in shared package/API.
+- Ran: `npm --prefix apps/web run build`
+- Result: PASS
+
+### 2026-07-20 — UX-D first vertical slice
+
+- Added `demo-designer` to demo bootstrap core staff.
+- Updated demo project organization roles to include designer.
+- Renamed Employees page to `직원·AI팀`.
+- Added fixed core team section: CEO, PM, Designer, Developer, QA.
+- Added external specialist lounge: Researcher, Data Analyst, Marketing, Security, Copywriter, Legal, Extra Developer.
+- Added user-facing staff labels while preserving existing internal roles.
+- Ran: `npm run build`
 - Ran: `npm --prefix apps/web run build`
 - Result: PASS

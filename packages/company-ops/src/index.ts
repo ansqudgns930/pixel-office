@@ -912,6 +912,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
     for (const member of [
       { id: "demo-ceo", role: "executive" as const },
       { id: "demo-pm", role: "department-manager" as const },
+      { id: "demo-designer", role: "member" as const },
       { id: "demo-developer", role: "member" as const },
       { id: "demo-qa", role: "member" as const },
     ])
@@ -955,7 +956,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
           runtimePath: ".",
           organizationProfile: {
             mode: "demo",
-            roles: ["ceo", "pm", "developer", "qa"],
+            roles: ["ceo", "pm", "designer", "developer", "qa"],
           },
           budgetLimit: 20,
         },
