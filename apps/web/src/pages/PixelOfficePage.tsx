@@ -200,6 +200,25 @@ const monitorColor = {
   completed: 0x39d0c8,
 } as const;
 
+function assignmentRationale(work: OfficeWorkItem | undefined, responsibility?: string | null): string {
+  if (!work) return "현재 직접 배정된 업무가 없어 대기 중입니다. 새 업무가 들어오거나 회의에 초대되면 자동으로 방에 표시됩니다.";
+  if (work.meetingId) return work.meetingStatus === "decision-pending" ? "회의에서 결정이 필요해 이 직원이 계획/회의 방에 남아 있습니다." : "현재 회의 참여자라서 계획/회의 방에 표시됩니다.";
+  if (work.phase === "planning") return "업무 목표와 완료 조건을 정리하는 단계라 계획 담당자로 표시됩니다.";
+  if (work.phase === "working") return responsibility === "reviewer" ? "검토 책임도 있지만 현재 Run 작업 흐름에 연결되어 개발실에 표시됩니다." : "실제 변경 작업을 맡고 있어 개발실에 표시됩니다.";
+  if (work.phase === "validating" || work.phase === "reviewing") return "완료 조건과 결과 근거를 검토하는 단계라 QA/검토 방에 표시됩니다.";
+  if (work.phase === "blocked") return "진행 차단 또는 검증 실패 신호가 있어 QA/검토 방에서 확인이 필요합니다.";
+  if (work.phase === "approval") return "오너 승인이나 중요한 결정이 필요해 승인실에 표시됩니다.";
+  if (work.phase === "completed") return "업무가 완료되어 결과 확인 대상으로 승인실에 보관됩니다.";
+  return "회사 이벤트와 연결된 업무가 있어 현재 단계 방에 표시됩니다.";
+}
+
+function roomRationale(roomId: string): string {
+  if (roomId === "planning") return "목표 해석, 계획 제안, 회의, 우선순위 조율이 모이는 방입니다.";
+  if (roomId === "working") return "실제 구현·수정·작업 실행이 진행되는 방입니다.";
+  if (roomId === "validating") return "QA, 검증 실패, blocked 상태, 재검토가 모이는 방입니다.";
+  return "오너 승인, 완료 결과, 중요한 결정이 대기하는 방입니다.";
+}
+
 export default function PixelOfficePage() {
   const { actorId } = useSession(),
     navigate = useNavigate(),
@@ -210,6 +229,7 @@ export default function PixelOfficePage() {
         localStorage.getItem("agent-company-os.lastCompany") ??
         "demo-company",
     ),
+    focusedGoalId = params.get("goalId"),
     [goal, setGoal] = useState("설정 화면에 연결 상태 배지를 추가해줘"),
     [company, setCompany] = useState<{
       name: string;
@@ -947,6 +967,7 @@ export default function PixelOfficePage() {
       ? workByAgent.get(selectedAgentId)
       : undefined,
     roomCounts = roomWorkCounts(agentWorkStates);
+  const selectedLink = selectedAgentId ? links.find((item) => item.agentId === selectedAgentId && (!selectedWork?.taskId || item.taskId === selectedWork.taskId)) : undefined;
   const appliedBinding =
     runBindings.find((item) => item.memberId === selectedAgentId) ??
     (selectedWork
@@ -1051,6 +1072,16 @@ export default function PixelOfficePage() {
           <Link className="button-link" to={`/activity?companyId=${encodeURIComponent(companyId)}`}>결과·활동 보기</Link>
         </div>
       </section>
+      {focusedGoalId && (
+        <section className="card" aria-label="선택 목표 추적">
+          <div className="section-heading"><div><span className="eyebrow">GOAL FOCUS</span><h2>선택 목표 추적 중</h2><p>이 live view는 현재 목표와 관련된 직원·방·결정 신호를 우선 해석합니다.</p></div><span className="badge">{shortId(focusedGoalId)}</span></div>
+          <div className="badge-row">
+            <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(focusedGoalId)}`}>목표 상세</Link>
+            <Link className="button-link" to={`/reviews?companyId=${encodeURIComponent(companyId)}`}>결정 필요</Link>
+            <Link className="button-link" to={`/activity?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(focusedGoalId)}`}>결과·활동</Link>
+          </div>
+        </section>
+      )}
       <details className="demo-tools card">
         <summary>데모·개발 도구</summary>
         <div className="row">
@@ -1204,12 +1235,13 @@ export default function PixelOfficePage() {
             })}
           </nav>
           <section className="card" aria-label="선택한 방의 진행 업무">
-            <div className="section-heading"><div><h2>{ROOMS[activeRoom]?.shortLabel ?? "오피스"} 진행 업무</h2><p>방을 클릭해 단계별 업무를 보고, 필요한 화면으로 이동하세요.</p></div></div>
+            <div className="section-heading"><div><h2>{ROOMS[activeRoom]?.shortLabel ?? "오피스"} 진행 업무</h2><p>{roomRationale(ROOMS[activeRoom]?.id ?? "planning")} 방을 클릭해 단계별 업무를 보고, 필요한 화면으로 이동하세요.</p></div>{focusedGoalId && <span className="badge">목표 {shortId(focusedGoalId)}</span>}</div>
             <div className="badge-row">
               {agentWorkStates.filter(work => roomFor(work.phase) === ROOMS[activeRoom]?.id).map(work => (
                 <button key={work.key} className="linked-work" onClick={() => work.runId ? navigate(executionUrl(work.runId, work.projectId, work.agentId)) : work.projectId ? navigate(`/projects?projectId=${encodeURIComponent(work.projectId)}&companyId=${encodeURIComponent(companyId)}`) : undefined}>
                   <strong>{work.agentId ?? "미배정"} · {phaseLabel[work.phase]}</strong>
                   <span>{shortId(work.taskId ?? work.runId ?? work.key)}</span>
+                  <small>{assignmentRationale(work, links.find((link) => link.taskId === work.taskId && link.agentId === work.agentId)?.responsibility)}</small>
                   <small>{work.runId ? "고급 실행 근거 보기" : "프로젝트 보기"}</small>
                 </button>
               ))}
@@ -1241,7 +1273,7 @@ export default function PixelOfficePage() {
                   work = workByAgent.get(agent.principal_id);
                 return (
                   <button
-                    className={work ? "active" : ""}
+                    className={`${work ? "active" : ""}${focusedGoalId && work ? " goal-focused" : ""}`.trim()}
                     aria-pressed={selectedAgentId === agent.principal_id}
                     aria-label={`${agent.principal_id} · ${work ? phaseLabel[work.phase] : "대기"}${work ? ` · ${work.taskId ?? work.runId ?? work.key}` : ""}`}
                     key={agent.principal_id}
@@ -1379,6 +1411,12 @@ export default function PixelOfficePage() {
                   <dd>{xp} 숙련도</dd>
                 </div>
               ))}
+              <div>
+                <dt>왜 배정됐나</dt>
+                <dd>{assignmentRationale(selectedWork, selectedLink?.responsibility)}</dd>
+              </div>
+              {selectedLink?.responsibility && <div><dt>책임</dt><dd>{selectedLink.responsibility}</dd></div>}
+              {focusedGoalId && <div><dt>추적 목표</dt><dd>{shortId(focusedGoalId)}</dd></div>}
               <div>
                 <dt>연결 업무</dt>
                 <dd>

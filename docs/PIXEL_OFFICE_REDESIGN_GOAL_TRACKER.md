@@ -238,3 +238,15 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — Pixel Office spatial interaction rationale slice
+
+- Added goal-focus context to Pixel Office when `goalId` is present in the URL.
+- Added `선택 목표 추적 중` card with links to goal detail, Decision Inbox, and activity.
+- Added room rationale copy explaining why planning/working/validating/approval rooms matter.
+- Added assignment rationale copy for room work chips and the selected agent drawer.
+- Added drawer fields for `왜 배정됐나`, responsibility, and focused goal.
+- Extended visual QA smoke with `pixel-goal-focus` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
