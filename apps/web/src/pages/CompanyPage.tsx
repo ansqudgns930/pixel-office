@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader.tsx";
 import CompanyModeBadge from "../components/CompanyModeBadge.tsx";
 import { useSession } from "../auth/SessionContext.tsx";
 import { apiGet, apiPost } from "../api.ts";
+import { hiddenCompanyCount, userFacingCompanyOptions } from "../companyOptions.ts";
 import { useToast } from "../components/ToastContext.tsx";
 import type { AgentBackendType,AgentBinding,CompanyCommandCenterSnapshot,CompanyRecord } from "../types.ts";
 import { uuid } from "../format.ts";
@@ -81,7 +82,7 @@ export default function CompanyPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "organization" | "briefing">("overview");
-  const [companies,setCompanies]=useState<Array<CompanyRecord&{role:string;projectCount:number}>>([]);
+  const [companies,setCompanies]=useState<Array<CompanyRecord&{role:string;projectCount:number}>>([]),[hiddenCompanies,setHiddenCompanies]=useState(0);
   const [health,setHealth]=useState<{metrics:{completedRuns:number;qualityPasses:number;validationFailures:number;incidents:number}}|null>(null);
   const [bindings,setBindings]=useState<AgentBinding[]>([]),[bindingKind,setBindingKind]=useState<"company"|"role"|"member">("company"),[bindingTarget,setBindingTarget]=useState(""),[bindingBackend,setBindingBackend]=useState<AgentBackendType>("standalone"),[bindingModel,setBindingModel]=useState("phase0-model");
   const [workRequest, setWorkRequest] = useState("");
@@ -103,7 +104,7 @@ export default function CompanyPage() {
     });
   }
 
-  useEffect(() => { void apiGet<Array<CompanyRecord&{role:string;projectCount:number}>>(`/api/companies?actor=${encodeURIComponent(actorId)}`).then(items=>{const received=Array.isArray(items),valid=(received?items:[]).filter(item=>item.status==="active");setCompanies(valid);const requested=params.get("companyId")||companyId,selected=valid.some(item=>item.id===requested)?requested:received?valid[0]?.id:requested;if(selected)void load(selected);else{setCompanyId("");setSnapshot(null);}}).catch(e=>{const requested=params.get("companyId")||companyId;if(requested)void load(requested);else setError(e instanceof Error?e.message:String(e));}); }, []);
+  useEffect(() => { void apiGet<Array<CompanyRecord&{role:string;projectCount:number}>>(`/api/companies?actor=${encodeURIComponent(actorId)}`).then(items=>{const received=Array.isArray(items),valid=(received?items:[]).filter(item=>item.status==="active");const requested=params.get("companyId")||companyId,visible=userFacingCompanyOptions(valid,requested);setCompanies(visible);setHiddenCompanies(hiddenCompanyCount(valid,requested));const selected=visible.some(item=>item.id===requested)?requested:received?visible[0]?.id:requested;if(selected)void load(selected);else{setCompanyId("");setSnapshot(null);}}).catch(e=>{const requested=params.get("companyId")||companyId;if(requested)void load(requested);else setError(e instanceof Error?e.message:String(e));}); }, []);
 
   function proposeWorkPlan() {
     return guarded(async () => {
@@ -175,7 +176,7 @@ export default function CompanyPage() {
       <div className="card">
         <div className="row">
           <label className="inline">현재 회사
-            <select value={companyId} onChange={e=>{setCompanyId(e.target.value);setSnapshot(null);}}><option value="">회사를 선택하세요</option>{companies.map(company=><option key={company.id} value={company.id}>{company.name} · {company.role} · 프로젝트 {company.projectCount}</option>)}</select>
+            <select value={companyId} onChange={e=>{setCompanyId(e.target.value);setSnapshot(null);}}><option value="">회사를 선택하세요</option>{companies.map(company=><option key={company.id} value={company.id}>{company.name} · {company.role} · 프로젝트 {company.projectCount}</option>)}{hiddenCompanies>0&&<option value="" disabled>테스트 회사 {hiddenCompanies}개 숨김</option>}</select>
           </label>
           <button disabled={busy || !companyId} onClick={() => void load()}>현황 새로고침</button>
           <Link className="button-link" to="/companies">회사 목록</Link>

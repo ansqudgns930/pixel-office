@@ -564,3 +564,19 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### 2026-07-21 — UX-M-2 Direct browser UX review fixes, priority 4-5
+
+- Reduced company dropdown noise in the main delegated-work flow by hiding generated QA/test companies behind a disabled summary option such as `테스트 회사 27개 숨김`.
+- Added shared company option helpers in `apps/web/src/companyOptions.ts` to keep the currently selected company visible while filtering generated QA/test companies from user-facing selectors.
+- Applied the filter to Header, Company Home, and GoalsPage selectors, the most visible dropdowns in the direct browser flow.
+- Added a Pixel Office live-density card: `지금 AI 팀이 하는 일`.
+- The new Pixel Office card summarizes current phase, active agent, room distribution, priority signals, and operational risk before the large office canvas, reducing the empty-dashboard feeling.
+- Updated Pixel Office stale toolbar label `회의` → `업무 검토 회의`.
+- Re-checked directly in browser without direct API calls: Company Home dropdown and Pixel Office live-density card.
+- Extended visual QA to assert hidden test-company summary and live-density copy.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
