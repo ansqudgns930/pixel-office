@@ -1,0 +1,9 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {mkdtempSync,mkdirSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
+import {join} from "node:path";
+import {tmpdir} from "node:os";
+import {SQLiteStateStore} from "../packages/persistence/src/index.js";
+import {ProjectOperations} from "../packages/project-ops/src/index.js";
+
+test("repository read/search are scoped, bounded, audited and block symlink escape",t=>{const root=mkdtempSync(join(tmpdir(),"repository-tools-")),outside=mkdtempSync(join(tmpdir(),"repository-outside-"));t.after(()=>{rmSync(root,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});});mkdirSync(join(root,"src"));writeFileSync(join(root,"src","a.ts"),"export const searchable = true;\n");writeFileSync(join(outside,"secret.txt"),"secret\n");symlinkSync(outside,join(root,"linked"),"junction");const state=new SQLiteStateStore(":memory:"),projects=new ProjectOperations(state.db,state);projects.createWorkspace("w","W");projects.createProject({id:"p",workspaceId:"w",name:"P",repoPath:root,defaultBranch:"main",runtimePath:root,organizationProfile:{},budgetLimit:1},"owner");assert.match(projects.repositoryRead("p","src/a.ts",{id:"owner"}).content,/searchable/);assert.deepEqual(projects.repositorySearch("p","searchable",{id:"owner"}).map(x=>x.path),["src/a.ts"]);assert.throws(()=>projects.repositoryRead("p","../secret.txt",{id:"owner"}),/outside/);assert.throws(()=>projects.repositoryRead("p","linked/secret.txt",{id:"owner"}),/symlink/);assert.throws(()=>projects.repositoryRead("p","src/a.ts",{id:"stranger"}),/Permission/);const audits=state.db.prepare("SELECT type FROM project_audit_v3 WHERE project_id='p'").all() as Array<{type:string}>;assert.ok(audits.some(x=>x.type==="REPOSITORY_READ"));assert.ok(audits.some(x=>x.type==="REPOSITORY_SEARCHED"));state.close();});

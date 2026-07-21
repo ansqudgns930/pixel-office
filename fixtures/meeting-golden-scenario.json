@@ -1,0 +1,31 @@
+{
+  "version": "meeting-golden-v1",
+  "meeting": {
+    "title": "Release readiness review",
+    "purpose": "Assess whether the release has enough validation evidence without granting approval",
+    "agenda": ["Validation coverage and unresolved release risk"]
+  },
+  "evidence": {
+    "messageId": "evidence-validation-gap",
+    "content": "The smoke suite passed, but the backup restore rehearsal has not been observed on the target environment.",
+    "evidenceIds": ["fixture:smoke-pass", "fixture:restore-pending"]
+  },
+  "profiles": {
+    "developer": {
+      "jobFamily": "engineering",
+      "responsibility": "Assess implementation completeness and identify the smallest safe technical next step.",
+      "completionCriteria": ["Implementation evidence is cited", "Unknown runtime behavior is explicitly identified"],
+      "requiredOutputs": ["Technical readiness opinion"],
+      "qualityChecklist": ["No approval claim", "No invented evidence"],
+      "escalationConditions": ["Target runtime behavior is unverified"]
+    },
+    "qa": {
+      "jobFamily": "qa",
+      "responsibility": "Challenge release readiness using validation and recovery evidence.",
+      "completionCriteria": ["A missing verification is identified", "Release risk is stated with evidence"],
+      "requiredOutputs": ["QA risk opinion or question"],
+      "qualityChecklist": ["No approval claim", "No invented evidence"],
+      "escalationConditions": ["Recovery evidence is missing"]
+    }
+  }
+}

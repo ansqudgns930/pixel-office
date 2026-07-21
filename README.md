@@ -2,6 +2,38 @@
 
 `more.md`를 기준으로 만든 로컬 우선·모듈식 멀티에이전트 실행 코어다. NVIDIA 플랫폼에는 `HostAdapter`로 선택 연결하며, 코어·SQLite·상태 머신은 특정 호스트에 종속되지 않는다.
 
+
+
+## Pixel Office delegated-work UX
+
+Pixel Office is now framed as a delegated-work AI company operation flow, not a flat agent/admin console.
+
+Primary user flow:
+
+```text
+login → company home → delegate work → AI plan preview → commit gate → delegated work status → Pixel Office live view → decision inbox → results/activity → next work
+```
+
+Main user-facing routes:
+
+- `/company`: 회사 홈 · 업무 맡기기, first-run samples, plan preview, safety rails, commit gate.
+- `/goals`: 맡긴 일, progress, delivery process, completion/reward loop.
+- `/pixel-office`: 진행 상황 Live View and `지금 AI 팀이 하는 일` live-density summary.
+- `/reviews`: 결정 필요 inbox for owner reviews, blocked work, validation, approvals, and risk signals.
+- `/activity`: 결과·활동, evidence, reports, search, alerts.
+- `/settings/backend`: AI engine settings for admin/model bindings.
+
+Useful validation commands:
+
+```powershell
+npm --prefix apps/web run build
+npm run delegated-work:browser-qa
+node scripts/pixel-office-redesign-visualqa.cjs
+```
+
+Secrets must stay outside Git. Use environment variables or ignored local `.env` files for tokens and provider API keys. The launcher `start-nvidia.bat` intentionally requires `AGENT_COMPANY_API_TOKEN` and `AGENT_COMPANY_MODEL_API_KEY` from the parent environment.
+
+
 ## Agent backend 선택
 
 - 기본 결정론적 Demo Stub: `AGENT_COMPANY_HOST=standalone`

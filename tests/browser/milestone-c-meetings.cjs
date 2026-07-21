@@ -1,0 +1,41 @@
+const {chromium}=require("playwright-core");
+const assert=require("node:assert/strict");
+const {spawn}=require("node:child_process");
+const path=require("node:path");
+
+async function main(){
+ const root=path.resolve(__dirname,"../.."),port=4175,base=`http://127.0.0.1:${port}`;
+ const server=spawn(process.execPath,[path.join(root,"apps/web/node_modules/vite/bin/vite.js"),"preview","--host","127.0.0.1","--port",String(port)],{cwd:path.join(root,"apps/web"),stdio:"ignore"});
+ for(let i=0;i<40;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(resolve=>setTimeout(resolve,250));if(i===39)throw new Error("Vite preview did not start");}
+ const browser=await chromium.launch({executablePath:process.env.BROWSER_AUTOMATION_EXECUTABLE,headless:true}),errors=[];
+ try{
+  const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.addInitScript(()=>{localStorage.setItem("agent-company-os.apiToken","qa-token");localStorage.setItem("agent-company-os.actorId","owner");localStorage.setItem("agent-company-os.username","qa");localStorage.setItem("agent-company-os.role","owner");localStorage.setItem("agent-company-os.lastCompany","qa-company");});
+  const page=await context.newPage(),createdAt=new Date().toISOString();let turns=[],messages=[{id:"msg-1",speakerId:"agent-a",kind:"opinion",targetType:"all",targetId:null,content:"Validation evidence is incomplete.",evidence:["meeting-1"],followUp:null,createdAt}];
+  const meeting={id:"meeting-1",companyId:"qa-company",goalId:null,projectId:null,runId:null,title:"Release readiness",purpose:"Review evidence",hostId:"owner",participantIds:["agent-a","agent-b","human"],agenda:["readiness"],status:"live",scheduledAt:null,startedAt:createdAt,endedAt:null,paused:false,messageCount:1,decisionCount:0,canParticipate:true};
+  const staff=[{principal_id:"agent-a",role:"developer",kind:"agent"},{principal_id:"agent-b",role:"qa",kind:"agent"}];
+  const center={goals:[],portfolio:{company:{id:"qa-company",name:"QA Company",mode:"live",status:"active",workspaceId:"w",budgetLimit:20,mandatoryReviews:[],mandatoryApprovals:[],allowedTools:[]},departments:[],projects:[],totals:{projects:0,tasks:0,done:0,spent:0,budget:20,blocked:0,stale:0,conflicts:0,approvals:0},snapshotHash:"portfolio"},briefings:[],meetings:[meeting],meetingSessions:[{id:meeting.id,title:meeting.title,status:"live",participantIds:meeting.participantIds,paused:false,currentMessage:{speakerId:"agent-a",content:"Validation evidence is incomplete."}}],audit:[],recommendations:[],pixel:{agents:staff}};
+  page.on("console",m=>{if(m.type()==="error"&&!m.text().startsWith("Failed to load resource:"))errors.push(`console: ${m.text()}`)});page.on("pageerror",e=>errors.push(`page: ${e.message}`));page.on("response",r=>{if(r.status()>=400)errors.push(`http ${r.status()}: ${r.url()}`)});
+  await page.route("**/favicon.ico",route=>route.fulfill({status:204,body:""}));
+  await page.route("**/api/**",async route=>{const request=route.request(),url=new URL(request.url()),p=url.pathname,method=request.method();
+   if(p==="/api/health")return route.fulfill({json:{status:"ready",sqlite:"ready"}});
+   if(p==="/api/companies")return route.fulfill({json:[{id:"qa-company",name:"QA Company",role:"owner",status:"active"}]});
+   if(p==="/api/companies/qa-company/meetings"&&method==="GET")return route.fulfill({json:[meeting]});
+   if(p==="/api/companies/qa-company/meetings/meeting-1"&&method==="GET")return route.fulfill({json:{meeting:{...meeting,messageCount:messages.length},messages,summary:null,members:[{principalId:"agent-a",role:"member",kind:"agent"},{principalId:"agent-b",role:"member",kind:"agent"},{principalId:"human",role:"member",kind:"human"}],context:{goal:null,project:null,run:null},agentTurns:turns,semanticSummary:null}});
+   if(p.endsWith("/agent-turns")&&method==="POST"){turns=["agent-a","agent-b"].map((participantId,index)=>({id:`turn-${index}`,round:1,participantId,status:"pending",dispatchState:"pending",tokens:0,cost:0,error:null,promptHash:""}));return route.fulfill({status:201,json:{meetingSnapshotId:"snapshot",turns}});}
+   if(p.endsWith("/agent-turns/run-next")&&method==="POST"){turns[0]={...turns[0],status:"completed",dispatchState:"projected",tokens:12,promptHash:"hash"};messages.push({id:"turn-message",speakerId:"agent-a",kind:"opinion",targetType:"all",targetId:null,content:"Agent evidence perspective.",evidence:["meeting-1"],followUp:null,createdAt});return route.fulfill({json:turns[0]});}
+   if(p==="/api/companies/qa-company"&&method==="GET")return route.fulfill({json:center});
+   if(p.endsWith("/office-projection"))return route.fulfill({json:{companyId:"qa-company",lastSequence:10,phase:"idle",activeAgentId:null,projectId:null,runId:null,taskId:null,timeline:[],alerts:[],workItems:[],stateHash:"office"}});
+   if(p.endsWith("/game-progression"))return route.fulfill({json:{companyXp:0,level:1,unlocks:[],agents:[],metrics:{completedRuns:0,qualityPasses:0,validationFailures:0,incidents:0},achievements:[],ledger:[],incidents:[],briefings:[],stateHash:"game"}});
+   if(p.endsWith("/office-links"))return route.fulfill({json:[]});
+   if(p.endsWith("/office/replay"))return route.fulfill({json:{events:[],nextAfter:0,hasMore:false}});
+   if(p.endsWith("/office"))return route.fulfill({json:{floors:[{floor:1,name:"Delivery Floor",unlockLevel:1,zones:["planning","development","qa","approval"]}],staff:staff.map((person,index)=>({principalId:person.principal_id,role:person.role,specialty:null,characterStyle:"standard",placement:{floor:1,zone:index?"qa":"development",desk:index+1}})),decorations:[],projects:[],capacity:{staff:2,target:30},theme:"classic",availableThemes:["classic","night","forest","high-contrast"]}});
+   if(p==="/api/events")return route.fulfill({status:200,contentType:"text/event-stream",body:": connected\n\n"});
+   return route.fulfill({status:200,json:{}});
+  });
+  await page.goto(`${base}/meetings?companyId=qa-company&meetingId=meeting-1`,{waitUntil:"domcontentloaded"});await page.getByText("Agent turns",{exact:true}).waitFor();await page.locator(".meeting-participants button").first().click();await page.getByText(/pending/).first().waitFor();await page.locator(".meeting-participants button").first().click();await page.getByText(/completed/).first().waitFor();assert.equal(await page.getByText("Agent evidence perspective.").count(),1);
+  const meetingLayout=await page.evaluate(()=>({columns:document.querySelectorAll(".meeting-three-column>aside,.meeting-three-column>.meeting-transcript").length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));assert.equal(meetingLayout.columns,3);assert.ok(meetingLayout.overflow<=0);
+  await page.goto(`${base}/pixel-office?companyId=qa-company`,{waitUntil:"domcontentloaded"});const canvasHost=page.locator(".office-canvas > div");try{await canvasHost.waitFor({state:"attached",timeout:5000});}catch(error){throw new Error(`Pixel Office did not render: url=${page.url()} body=${(await page.locator("body").innerText()).slice(0,1000)} errors=${JSON.stringify(errors)} cause=${error.message}`);}await page.waitForFunction(()=>document.querySelector(".office-canvas > div")?.getAttribute("data-meeting-participants")==="agent-a,agent-b");const meetingParticipants=await canvasHost.getAttribute("data-meeting-participants"),meetingIds=await canvasHost.getAttribute("data-meeting-ids"),meetingStatuses=await canvasHost.getAttribute("data-meeting-statuses");assert.equal(meetingParticipants,"agent-a,agent-b");assert.equal(meetingIds,"meeting-1");assert.match(meetingStatuses,/agent-a:live/);assert.doesNotMatch(meetingParticipants,/human/);await page.locator(".agent-roster button").filter({hasText:"agent-a"}).click();const link=page.locator(`a[href*="meetingId=meeting-1"][href*="participantId=agent-a"]`);await link.waitFor();
+  await page.setViewportSize({width:390,height:844});const mobileOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);assert.ok(mobileOverflow<=0);assert.deepEqual(errors,[]);console.log(JSON.stringify({turnStatus:turns[0].status,messages:messages.length,meetingParticipants,meetingIds,meetingStatuses,mobileOverflow,errors}));
+ }finally{await browser.close();server.kill();}
+}
+main().catch(error=>{console.error(error);process.exit(1)});

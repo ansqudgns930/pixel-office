@@ -1142,17 +1142,15 @@ export default function PixelOfficePage() {
           )}
         </section>
       )}
-      {projection && (
-        <section className="office-now card" aria-label="지금 AI 팀이 하는 일">
+      <section className="office-now card" aria-label="지금 AI 팀이 하는 일">
           <div className="section-heading"><div><span className="eyebrow">LIVE DENSITY</span><h2>지금 AI 팀이 하는 일</h2><p>빈 화면을 기다리지 않아도 됩니다. 현재 단계, 담당 방, 필요한 결정, 최근 신호를 바로 확인하세요.</p></div><Link className="button-link" to={focusedGoalId ? `/goals?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(focusedGoalId)}` : `/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일 상세</Link></div>
           <div className="office-now-grid">
-            <article><span>현재 단계</span><strong>{phaseLabel[projection.phase]}</strong><small>{projection.activeAgentId ? `담당 ${projection.activeAgentId}` : "대기 중"}</small></article>
+            <article><span>현재 단계</span><strong>{projection ? phaseLabel[projection.phase] : "상태 확인 중"}</strong><small>{projection?.activeAgentId ? `담당 ${projection.activeAgentId}` : connected ? "업무 이벤트 대기 중" : "연결 확인 중"}</small></article>
             <article><span>진행 업무</span><strong>{agentWorkStates.length}</strong><small>계획 {roomCounts.planning} · 개발 {roomCounts.working} · 검토 {roomCounts.validating} · 승인 {roomCounts.approval}</small></article>
             <article className={groupedAlerts.length ? "warning" : ""}><span>우선 신호</span><strong>{groupedAlerts.length}</strong><small>{groupedAlerts[0] ? eventLabel(groupedAlerts[0].item.type) : "긴급 신호 없음"}</small></article>
             <article className={game?.metrics.incidents ? "danger" : ""}><span>운영 리스크</span><strong>{game?.metrics.incidents ?? 0}</strong><small>검증 실패 {game?.metrics.validationFailures ?? 0}</small></article>
           </div>
         </section>
-      )}
       {game && (
         <section
           className="game-progress card"

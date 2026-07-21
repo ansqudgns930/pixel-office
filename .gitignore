@@ -7,3 +7,12 @@ fixtures/golden-repository/.git/
 .env
 .env.*
 !.env.production.example
+# Local runtime and release-cleanup artifacts
+.runtime/
+runtime/
+outputs/
+.qa-*.log
+*.png
+*.log
+.env.local
+fixtures/golden-repository/

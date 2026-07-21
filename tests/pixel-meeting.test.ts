@@ -1,0 +1,5 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {latestWorkByAgent,meetingWorkItems,officeStatusPresentation} from "../packages/office-view-model/src/index.js";
+
+test("only actual live or decision-pending Agent participants gather for a meeting",()=>{const items=meetingWorkItems({meetings:[{id:"scheduled",status:"scheduled",participantIds:["a"],paused:false},{id:"live",status:"live",participantIds:["a","human","removed"],paused:true},{id:"decision",status:"decision-pending",participantIds:["b"],paused:false},{id:"ended",status:"ended",participantIds:["a"],paused:false}],agentIds:new Set(["a","b"]),lastSequence:10});assert.deepEqual(items.map(x=>[x.meetingId,x.agentId,x.meetingPaused]),[["live","a",true],["decision","b",false]]);assert.deepEqual(latestWorkByAgent([{key:"run",projectId:"p",runId:"r",taskId:"t",phase:"working",agentId:"a",lastSequence:10},...items]).map(x=>[x.agentId,x.phase]),[["a","meeting"],["b","meeting"]]);assert.equal(officeStatusPresentation("meeting").bubble,"회의 중");});
