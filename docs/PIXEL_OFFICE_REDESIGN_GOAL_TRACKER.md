@@ -369,3 +369,20 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — WarRoomPage execution workroom slice
+
+- Reframed `WarRoomPage` from `프로젝트 워룸 · Project War Room` to `실행 작업실`.
+- Updated page description to explain that delegated work is broken into Tasks, assignees, Runs, and validation evidence.
+- Added goal-focus context when `goalId` is present: `선택한 맡긴 일의 실행 작업실입니다`.
+- Added execution evidence badges: `Task 분해`, `담당 배정`, `Run 시작`, `검증 설정`.
+- Added delegated-flow toolbar links to `회사 홈`, `맡긴 일 상세`, `결과·활동`, and `업무 검토 회의`.
+- Reworded project/task/create/empty/validation/notification copy toward execution evidence and delegated-work language.
+- Preserved `goalId` when starting a Run from a selected Task.
+- Renamed nav label from `프로젝트 워룸` to `실행 작업실`.
+- Extended visual QA smoke with `execution-workroom` route using the real demo fixture project id `demo-first-delivery`.
+- Fixed QA script encoding after a PowerShell Set-Content attempt corrupted Korean text; rewrote the QA script as UTF-8.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

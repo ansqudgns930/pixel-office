@@ -36,6 +36,7 @@ export default function WarRoomPage() {
   const [repositoryInput,setRepositoryInput]=useState("src"),[repositoryOutput,setRepositoryOutput]=useState("");
   const [newProjectName,setNewProjectName]=useState(""),[newProjectRepoPath,setNewProjectRepoPath]=useState("."),[newProjectBudget,setNewProjectBudget]=useState("20"),[newProjectDepartmentId,setNewProjectDepartmentId]=useState(""),[projectAddBusy,setProjectAddBusy]=useState(false);
   const [newTaskTitle,setNewTaskTitle]=useState(""),[newTaskCriteria,setNewTaskCriteria]=useState(""),[newTaskBudget,setNewTaskBudget]=useState("5"),[taskAddBusy,setTaskAddBusy]=useState(false);
+  const focusedGoalId = params.get("goalId") ?? "";
 
   async function guarded(work: () => Promise<void>) {
     setBusy(true); setError(null);
@@ -109,6 +110,7 @@ export default function WarRoomPage() {
     next.set("projectId", projectId);
     next.set("companyId", companyId);
     next.set("suggestedGoal", selectedTask.title);
+    if (focusedGoalId) next.set("goalId", focusedGoalId);
     navigate(`/execution?${next.toString()}`);
   }
 
@@ -158,7 +160,7 @@ export default function WarRoomPage() {
 
   return (
     <div>
-      <PageHeader title="프로젝트 워룸 · Project War Room" description="프로젝트·마일스톤·태스크 보드를 조회하고 담당을 배정합니다." />
+      <PageHeader title="실행 작업실" description="맡긴 일을 실제 Task, 담당자, Run, 검증 설정으로 쪼개 실행 근거를 관리합니다." />
 
       <div className="card">
         <div className="row">
@@ -176,13 +178,21 @@ export default function WarRoomPage() {
           </label>
           <button disabled={busy || !projectId} onClick={() => void load()}>새로고침</button>
           <ConfirmButton label="만료 작업 복구" confirmLabel="복구 실행 — 다시 눌러 확정" disabled={busy || !projectId} onConfirm={() => void recover()} />
-          {params.get("companyId") && <Link className="button-link" to={`/company?companyId=${encodeURIComponent(params.get("companyId")!)}`}>회사로 돌아가기</Link>}
+          {params.get("companyId") && <Link className="button-link" to={`/company?companyId=${encodeURIComponent(params.get("companyId")!)}`}>회사 홈</Link>}
+          {params.get("companyId") && <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(params.get("companyId")!)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>맡긴 일 상세</Link>}
+          {params.get("companyId") && <Link className="button-link" to={`/activity?companyId=${encodeURIComponent(params.get("companyId")!)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>결과·활동</Link>}
+          {params.get("companyId") && <Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(params.get("companyId")!)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>업무 검토 회의</Link>}
         </div>
         {error && <p className="error">{error}</p>}
       </div>
 
-      {companyId && <details className="goal-create"><summary>+ 새 프로젝트 만들기</summary><div className="goal-form">
-        <label>프로젝트명 (필수)<input value={newProjectName} onChange={e=>setNewProjectName(e.target.value)} placeholder="예: 온보딩 자동화"/></label>
+      {focusedGoalId && <section className="card" aria-label="선택 업무 실행 작업실">
+        <div className="section-heading"><div><span className="eyebrow">EXECUTION EVIDENCE</span><h2>선택한 맡긴 일의 실행 작업실입니다</h2><p>이곳에서는 업무를 Task로 쪼개고, 담당 Agent를 배정하고, Run과 검증 근거로 이어지는 실행 단계를 관리합니다.</p></div><span className="badge">{focusedGoalId.slice(0,8)}</span></div>
+        <div className="badge-row"><span className="badge">Task 분해</span><span className="badge">담당 배정</span><span className="badge">Run 시작</span><span className="badge">검증 설정</span></div>
+      </section>}
+
+      {companyId && <details className="goal-create"><summary>+ 실행 실행 프로젝트 만들기</summary><div className="goal-form">
+        <label>실행 프로젝트명 (필수)<input value={newProjectName} onChange={e=>setNewProjectName(e.target.value)} placeholder="예: 온보딩 자동화"/></label>
         <label>저장소 경로<input value={newProjectRepoPath} onChange={e=>setNewProjectRepoPath(e.target.value)} placeholder="."/></label>
         <div className="goal-form-row">
           <label>예산<input type="number" min="0" value={newProjectBudget} onChange={e=>setNewProjectBudget(e.target.value)}/></label>
@@ -192,7 +202,7 @@ export default function WarRoomPage() {
         {!projectAddBusy&&(!newProjectName.trim()||!newProjectDepartmentId)&&<p className="field-help">{!newProjectName.trim()?"프로젝트명을 입력하세요.":"연결할 부서가 없습니다. 회사 홈에서 부서를 먼저 만드세요."}</p>}
       </div></details>}
 
-      {!snapshot&&!error&&<div className="empty-panel"><strong>회사와 프로젝트를 선택하세요.</strong><span>접근 가능한 프로젝트만 표시되며, 프로젝트가 하나면 자동으로 열립니다.</span></div>}
+      {!snapshot&&!error&&<div className="empty-panel"><strong>회사와 실행 프로젝트를 선택하세요.</strong><span>맡긴 일에 연결된 프로젝트를 열면 Task, 담당자, Run 근거를 확인할 수 있습니다.</span></div>}
 
       {snapshot && (
         <>
@@ -205,7 +215,7 @@ export default function WarRoomPage() {
             </div>
           )}
 
-          <details className="goal-create"><summary>+ 새 Task 만들기</summary><div className="goal-form">
+          <details className="goal-create"><summary>+ 실행 실행 Task 만들기</summary><div className="goal-form">
             <label>제목 (필수)<input value={newTaskTitle} onChange={e=>setNewTaskTitle(e.target.value)} placeholder="예: 온보딩 이메일 자동 발송 구현"/></label>
             <label>완료 기준 (필수, 한 줄에 하나씩)<textarea value={newTaskCriteria} onChange={e=>setNewTaskCriteria(e.target.value)} rows={3} placeholder="한 줄에 하나씩 입력"/></label>
             <label>예산<input type="number" min="0" value={newTaskBudget} onChange={e=>setNewTaskBudget(e.target.value)}/></label>
@@ -214,7 +224,7 @@ export default function WarRoomPage() {
           </div></details>
 
           <section className="project-board-section">
-          <div className="section-heading"><div><h2>업무 보드</h2><p>태스크를 선택하면 아래에서 담당자와 상태를 변경할 수 있습니다.</p></div><span className="mobile-scroll-cue">좌우로 밀어 상태 보기 →</span></div>
+          <div className="section-heading"><div><h2>실행 Task 보드</h2><p>맡긴 일을 수행 가능한 Task로 나누고, 담당자·상태·Run 근거를 관리합니다.</p></div><span className="mobile-scroll-cue">좌우로 밀어 상태 보기 →</span></div>
           <div className="board">
             {BOARD_STATUSES.map(status => (
               <div key={status} className="board-column">
@@ -238,7 +248,7 @@ export default function WarRoomPage() {
           </section>
 
           {selectedTask ? <div className="card task-editor" style={{ marginTop: 12 }}>
-            <h2>실행 담당 배정 · 상태 변경 — {selectedTask.title}</h2>
+            <h2>담당 Agent 배정 · 실행 상태 변경 — {selectedTask.title}</h2>
             <div className="row">
               <label className="inline">담당자 ID
                 <input value={principalId} onChange={e => setPrincipalId(e.target.value)} />
@@ -271,19 +281,19 @@ export default function WarRoomPage() {
                 ? <Link className="button-link" to={`/execution?runId=${encodeURIComponent(selectedTask.runId)}`}>연결된 Run 보기 →</Link>
                 : selectedTask.assignments.length > 0
                   ? <button onClick={startRunForTask}>이 Task로 Run 시작 →</button>
-                  : <p className="field-help">Run을 시작하려면 먼저 담당자를 배정하세요.</p>}
+                  : <p className="field-help">Run 근거를 만들려면 먼저 담당 Agent를 배정하세요.</p>}
             </div>
           </div> : <div className="task-selection-prompt"><strong>편집할 태스크를 선택하세요.</strong><span>업무 보드의 태스크를 선택하면 담당자 배정과 상태 변경 도구가 열립니다.</span></div>}
 
           <details className="project-advanced card">
-            <summary>프로젝트 도구·검증 설정</summary>
-            <div className="advanced-section"><h2>검증 항목</h2><p>Run 완료 전에 자동으로 확인할 항목입니다.</p><div className="validator-options">{VALIDATOR_CHECKS.map(check=><label className="validator-option" key={check}><input type="checkbox" checked={validatorChecks.includes(check)} onChange={event=>setValidatorChecks(current=>event.target.checked?[...current,check]:current.filter(x=>x!==check))}/><span>{CHECK_LABEL[check]}</span></label>)}</div><button disabled={busy||!validatorChecks.length} onClick={()=>void saveValidatorProfile()}>검증 항목 저장</button></div>
+            <summary>실행 근거 도구·검증 설정</summary>
+            <div className="advanced-section"><h2>검증 항목</h2><p>맡긴 일의 완료 근거로 남길 자동 확인 항목입니다.</p><div className="validator-options">{VALIDATOR_CHECKS.map(check=><label className="validator-option" key={check}><input type="checkbox" checked={validatorChecks.includes(check)} onChange={event=>setValidatorChecks(current=>event.target.checked?[...current,check]:current.filter(x=>x!==check))}/><span>{CHECK_LABEL[check]}</span></label>)}</div><button disabled={busy||!validatorChecks.length} onClick={()=>void saveValidatorProfile()}>검증 항목 저장</button></div>
             <div className="advanced-section"><h2>저장소 읽기·검색</h2><div className="row"><label className="inline">경로 또는 검색어<input value={repositoryInput} onChange={event=>setRepositoryInput(event.target.value)}/></label><button disabled={busy||!repositoryInput} onClick={()=>void repositoryRead()}>파일 읽기</button><button className="secondary" disabled={busy||!repositoryInput} onClick={()=>void repositorySearch()}>내용 검색</button></div>{repositoryOutput&&<pre style={{maxHeight:280,overflow:"auto",whiteSpace:"pre-wrap"}}>{repositoryOutput}</pre>}</div>
           </details>
 
           {snapshot.notifications.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <h2>알림</h2>
+              <h2>실행 신호</h2>
               {snapshot.notifications.map(n => (
                 <div key={n.id} className={`notification-row${n.readAt ? "" : " unread"}`}>
                   <span>{notificationLabel(n.type)} · {new Date(n.createdAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>

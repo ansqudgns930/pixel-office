@@ -33,6 +33,7 @@ async function main() {
     { name: 'decision-inbox', url: `/reviews?companyId=${companyId}`, required: ['결정 필요', '지금 결정 필요', '운영 원칙'] },
     { name: 'activity-results', url: `/activity?companyId=${companyId}&goalId=demo-company-goal`, required: ['결과·활동', '선택한 맡긴 일의 결과와 활동을 보는 중입니다', '활동 신호', '결과 보고', '근거 검색'] },
     { name: 'work-review-meetings', url: `/meetings?companyId=${companyId}&goalId=demo-company-goal`, required: ['업무 검토 회의', '선택한 맡긴 일의 검토 회의를 보는 중입니다', '진행 검토', '결정 정리', '후속 Task'] },
+    { name: 'execution-workroom', url: `/projects?companyId=${companyId}&projectId=demo-first-delivery&goalId=demo-company-goal`, required: ['실행 작업실', '선택한 맡긴 일의 실행 작업실입니다', 'Task 분해', '담당 배정', '검증 설정'] },
     { name: 'pixel-live-view', url: `/pixel-office?companyId=${companyId}`, required: ['진행 상황 Live View', '새 업무 맡기기', '결정 필요 처리', '직원·AI팀 보기'] },
     { name: 'pixel-goal-focus', url: `/pixel-office?companyId=${companyId}&goalId=demo-company-goal`, required: ['선택 목표 추적 중', '목표 상세', '결정 필요', '결과·활동', '진행 업무'] },
     { name: 'backend-settings', url: `/settings/backend?companyId=${companyId}`, required: ['설정 · AI 엔진', '회사 기본 AI 엔진', 'Planner / PM', 'Worker / Developer', 'Reviewer / QA', '저장 전 요약', 'Live Run snapshot 검증'] },

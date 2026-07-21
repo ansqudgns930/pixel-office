@@ -9,7 +9,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/meetings", label: "회의", icon: "grid" },
   { path: "/activity", label: "결과·활동", icon: "layers" },
   { path: "/employees", label: "직원·AI팀", icon: "building" },
-  { path: "/projects", label: "프로젝트 워룸", icon: "board" },
+  { path: "/projects", label: "실행 작업실", icon: "board" },
   { path: "/settings/backend", label: "설정", icon: "gear", roles: ["admin"] },
   { path: "/execution", label: "고급 실행", icon: "play" },
   { path: "/operations", label: "운영 상태", icon: "gear", roles: ["admin"] },
