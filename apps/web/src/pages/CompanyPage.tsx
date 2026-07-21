@@ -27,6 +27,30 @@ interface WorkPlanPreview extends StaffingPlanResponse {
   draft: GoalDraftResponse;
 }
 
+
+const SAMPLE_WORK_REQUESTS = [
+  "랜딩페이지 첫 화면을 더 설득력 있게 개선해줘.",
+  "회원가입 후 첫 사용자가 헷갈리는 지점을 찾아서 온보딩을 고쳐줘.",
+  "결제 전환 버튼 주변 문구와 안전장치를 개선해줘.",
+  "모바일 화면에서 잘리는 UI와 접근성 문제를 점검해줘."
+];
+const TEAM_REASON: Record<string,string> = {
+  CEO: "목표와 우선순위가 회사 방향에 맞는지 확인합니다.",
+  PM: "범위, 완료 기준, 일정, 사용자 결정을 정리합니다.",
+  Designer: "사용자 흐름, 화면 위계, 문구, 심리적 마찰을 점검합니다.",
+  Developer: "실제 실행 Task를 만들고 구현 변경을 담당합니다.",
+  QA: "완료 전에 검증 결과와 실패 복구 근거를 남깁니다.",
+  Researcher: "외부 사례와 사용자 맥락을 조사해 계획 근거를 보강합니다.",
+  Security: "권한, 데이터, 위험 변경 여부를 확인합니다.",
+  "Data Analyst": "지표와 비교 근거로 판단을 보강합니다.",
+  Marketing: "전환 문구와 가치 제안을 점검합니다.",
+  Copywriter: "사용자가 이해하기 쉬운 문구로 다듬습니다.",
+  Legal: "정책, 약관, 권리 이슈가 있는지 확인합니다.",
+  "Extra Developer": "구현 범위가 큰 경우 병렬 실행을 돕습니다."
+};
+function staffReason(name:string){return TEAM_REASON[name] ?? "요청한 업무의 일부를 처리하기 위해 임시로 투입됩니다.";}
+function riskLabel(level: StaffingPlanResponse["risk"]){return level==="critical"?"매우 높음":level==="high"?"높음":level==="medium"?"보통":"낮음";}
+
 function companyActionErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/Project budget exceeds department/i.test(message)) {
@@ -140,7 +164,7 @@ export default function CompanyPage() {
 
   return (
     <div>
-      <PageHeader title="회사 홈" description="회사의 목표·직원·프로젝트·승인·품질 현황과 다음 행동을 확인합니다." />
+      <PageHeader title="회사 홈" description="업무를 입력하면 AI 회사가 계획, 실행, 검증, 결정 요청, 결과 보고까지 이어서 처리합니다." />
 
       <div className="card">
         <div className="row">
@@ -156,11 +180,31 @@ export default function CompanyPage() {
         {error && <p className="error">{error}</p>}
       </div>
 
+      <section className="card" aria-label="처음 업무 맡기기 안내" style={{ marginTop: 16 }}>
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">FIRST RUN</span>
+            <h2>처음이라면 작은 업무 하나를 AI 회사에 맡겨보세요</h2>
+            <p>복잡한 설정부터 하지 않아도 됩니다. 업무를 한 줄로 적으면 AI 팀이 계획을 만들고, 위험하거나 권한이 필요한 순간에만 멈춰서 결정을 요청합니다.</p>
+          </div>
+          <span className="badge">30초 시작</span>
+        </div>
+        <div className="badge-row">
+          <span className="badge">1. 업무 입력</span>
+          <span className="badge">2. AI 계획 preview</span>
+          <span className="badge">3. 안전장치 확인</span>
+          <span className="badge">4. 맡기기</span>
+        </div>
+        <div className="row" style={{ marginTop: 10 }}>
+          {SAMPLE_WORK_REQUESTS.map(sample => <button key={sample} type="button" className="secondary" onClick={() => { setWorkRequest(sample); setPlanPreview(null); }}>{sample}</button>)}
+        </div>
+      </section>
+
       <section className="card" aria-label="AI 회사에 업무 맡기기" style={{ marginTop: 16 }}>
         <div className="section-heading">
           <div>
             <h2>무슨 일을 AI 회사에 맡길까요?</h2>
-            <p>업무를 입력하면 AI 회사가 목표, 실행 계획, 투입 직원, 결정 필요 지점을 먼저 제안합니다.</p>
+            <p>업무를 입력하면 AI 회사가 실행 순서, 투입 직원, 예상 결과물, 결정 필요 지점, 안전장치를 먼저 제안합니다.</p>
           </div>
           {companyId && <Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀오피스로 보기</Link>}
         </div>
@@ -194,10 +238,50 @@ export default function CompanyPage() {
               {planPreview.draft.completionCriteria.map(item => <li key={item}>{item}</li>)}
             </ul>
             <p><strong>사용자 결정 필요 예상:</strong> {planPreview.decisionExpectation}</p>
+            <div className="grid" style={{ marginTop: 12 }}>
+              <section className="card" aria-label="왜 이 팀인가요">
+                <h3>왜 이 팀인가요?</h3>
+                <ul>
+                  {planPreview.staff.map(member => <li key={member}><strong>{member}</strong> · {staffReason(member)}</li>)}
+                </ul>
+              </section>
+              <section className="card" aria-label="실행하면 이렇게 진행됩니다">
+                <h3>실행하면 이렇게 진행됩니다</h3>
+                <ol>
+                  <li>PM이 범위와 완료 기준을 정리합니다.</li>
+                  <li>실행 작업실에서 Task와 담당 Agent가 구성됩니다.</li>
+                  <li>Developer가 실행하고 QA가 검증 근거를 남깁니다.</li>
+                  <li>위험·권한·불확실성이 있으면 결정 필요에 멈춥니다.</li>
+                  <li>완료되면 결과·활동에서 브리핑을 확인합니다.</li>
+                </ol>
+              </section>
+              <section className="card" aria-label="예상 개입">
+                <h3>예상 개입</h3>
+                <ul>
+                  <li>위험도: {riskLabel(planPreview.risk)}</li>
+                  <li>{planPreview.decisionExpectation}</li>
+                  <li>검증 실패나 예산 초과가 있으면 자동 완료하지 않습니다.</li>
+                </ul>
+              </section>
+              <section className="card" aria-label="안전장치">
+                <h3>안전장치</h3>
+                <ul>
+                  <li>고위험 변경은 결정 필요에 멈춥니다.</li>
+                  <li>검증 실패 시 재작업 또는 승인 대기로 전환합니다.</li>
+                  <li>예산 초과 시 실행하지 않고 사용자 안내를 표시합니다.</li>
+                  <li>결과 승인 전까지 근거를 확인할 수 있습니다.</li>
+                </ul>
+              </section>
+            </div>
+            <section className="card" aria-label="예상 결과물" style={{ marginTop: 12 }}>
+              <h3>예상 결과물</h3>
+              <p>완료 후에는 맡긴 일 진행 기록, 실행 Task, 검증 근거, 결정 이력, 결과 브리핑을 확인할 수 있습니다.</p>
+            </section>
             {planPreview.draft.warnings.length > 0 && <p className="error">{planPreview.draft.warnings.join(", ")}</p>}
             <div className="row" style={{ marginTop: 8 }}>
-              <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>이 계획으로 실행</button>
-              <button className="secondary" onClick={() => setPlanPreview(null)}>수정 요청</button>
+              <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>이 계획으로 AI 회사에 맡기기</button>
+              <button className="secondary" onClick={() => setPlanPreview(null)}>계획 수정</button>
+              <Link className="button-link" to={companyId ? `/settings/backend?companyId=${encodeURIComponent(companyId)}` : "/settings/backend"}>고급 설정</Link>
               <Link className="button-link" to={companyId ? `/employees?companyId=${encodeURIComponent(companyId)}` : "/employees"}>투입 직원 보기</Link>
             </div>
           </div>

@@ -58,12 +58,12 @@ async function main() {
     await page.getByRole('button', { name: 'AI 팀에게 계획 요청' }).click();
     await page.getByText('AI 계획 제안', { exact: true }).waitFor({ timeout: 30000 });
     await page.screenshot({ path: path.join(outDir, '01-plan-preview.png'), fullPage: true });
-    const previewText = await page.locator('.recommendation').innerText();
-    for (const required of ['AI 계획 제안', '위험도', '완료 조건', '사용자 결정 필요 예상']) {
+    const previewText = await page.locator('body').innerText();
+    for (const required of ['AI 계획 제안', '위험도', '완료 조건', '사용자 결정 필요 예상', '왜 이 팀인가요?', '실행하면 이렇게 진행됩니다', '예상 개입', '안전장치', '예상 결과물', '이 계획으로 AI 회사에 맡기기']) {
       if (!previewText.includes(required)) throw new Error(`plan preview missing: ${required}`);
     }
 
-    await page.getByRole('button', { name: '이 계획으로 실행' }).click();
+    await page.getByRole('button', { name: '이 계획으로 AI 회사에 맡기기' }).click();
     try {
       await page.waitForURL(/\/goals\?/, { timeout: 90000 });
     } catch (error) {

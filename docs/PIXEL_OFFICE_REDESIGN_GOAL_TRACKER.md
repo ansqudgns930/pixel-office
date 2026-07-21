@@ -469,3 +469,25 @@ Acceptance criteria:
   - UX-K: Completion reward loop.
   - UX-L: Navigation simplification.
 - Recommended immediate next goal: Company Home first-run onboarding + plan preview commit gate strengthening.
+
+### 2026-07-21 — UX-H/UX-I Company Home onboarding and commit gate slice
+
+- Implemented the next UX priority from `PIXEL_OFFICE_UX_FLOW_REVIEW_20260721.md`: first-run onboarding + plan preview commit gate strengthening.
+- Updated `CompanyPage` page description to emphasize that AI company handles planning, execution, validation, decisions, and result reporting.
+- Added first-run onboarding card: `처음이라면 작은 업무 하나를 AI 회사에 맡겨보세요`.
+- Added 30-second start flow badges: 업무 입력 → AI 계획 preview → 안전장치 확인 → 맡기기.
+- Added sample work request buttons for common first delegations.
+- Strengthened plan preview/commit gate:
+  - `왜 이 팀인가요?` with role-specific rationale.
+  - `실행하면 이렇게 진행됩니다` step sequence.
+  - `예상 개입` including risk and decision expectation.
+  - `안전장치` describing high-risk pause, validation failure behavior, budget stop, and result evidence.
+  - `예상 결과물` describing delegated-work record, execution Task, validation evidence, decision history, and result briefing.
+- Changed primary CTA from `이 계획으로 실행` to `이 계획으로 AI 회사에 맡기기`.
+- Changed secondary CTA from `수정 요청` to `계획 수정`, and added `고급 설정` link.
+- Extended visual QA Company Home required copy with first-run onboarding text.
+- Extended delegated-work browser E2E to assert commit-gate copy and click the new CTA.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

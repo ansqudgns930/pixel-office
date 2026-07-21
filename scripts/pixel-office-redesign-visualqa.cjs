@@ -27,7 +27,7 @@ async function main() {
   }, { token });
 
   const checks = [
-    { name: 'company-home', url: `/company?companyId=${companyId}`, required: ['무슨 일을 AI 회사에 맡길까요?', 'AI 팀에게 계획 요청', '결정 필요'] },
+    { name: 'company-home', url: `/company?companyId=${companyId}`, required: ['처음이라면 작은 업무 하나를 AI 회사에 맡겨보세요', '무슨 일을 AI 회사에 맡길까요?', 'AI 팀에게 계획 요청', '결정 필요'] },
     { name: 'staff-team', url: `/employees?companyId=${companyId}`, required: ['직원·AI팀', '고정 핵심팀', 'CEO', 'PM', 'Designer', 'Developer', 'QA', '외부 전문가 대기실'] },
     { name: 'delegated-work-goals', url: `/goals?companyId=${companyId}`, required: ['맡긴 일', '업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', '업무 목록', '진행 단계', '다음 액션'] },
     { name: 'decision-inbox', url: `/reviews?companyId=${companyId}`, required: ['결정 필요', '지금 결정 필요', '운영 원칙'] },
