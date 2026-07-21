@@ -518,3 +518,16 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### 2026-07-21 — UX-K Completion reward loop slice
+
+- Added a completion/reward loop card to `GoalsPage`.
+- The delegated-work detail now shows a result-loop section that switches between `완료 리포트 준비 중` and `업무 완료`.
+- The card summarizes completed work, created artifacts, validation state, decision history, and next-work continuation.
+- Added primary/secondary CTAs: `다음 업무 맡기기`, `근거 자세히 보기`, and `픽셀 오피스에서 보기`.
+- Extended delegated-work browser QA and visual QA smoke to assert the reward-loop copy.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
