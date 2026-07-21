@@ -16,7 +16,7 @@ async function main() {
     page.on("response", r => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url()}`); });
     await page.setViewportSize({ width: 1440, height: 1100 });
 
-    // 1) Go to War Room, create a project
+    // 1) Go to Execution Workroom, create a project
     await page.goto("http://127.0.0.1:4173/projects?companyId=demo-company", { waitUntil: "load" });
     await page.waitForSelector("h1,h2", { timeout: 8000 });
     await page.waitForTimeout(500);

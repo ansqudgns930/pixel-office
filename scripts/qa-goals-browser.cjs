@@ -4,7 +4,7 @@ const path = require("node:path");
 async function inspect(page, viewport, output) {
   await page.setViewportSize(viewport);
   await page.goto("http://127.0.0.1:4173/goals?companyId=demo-company&goalId=demo-company-goal", { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "회사 목표", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "맡긴 일", exact: true }).waitFor();
   const result = await page.evaluate(() => ({
     title: document.title,
     scrollWidth: document.documentElement.scrollWidth,

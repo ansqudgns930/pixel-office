@@ -1,6 +1,6 @@
 /** 표준 dot-notation 이벤트 타입을 사용자 언어(prj_2.md §42.3)로 변환한다. 미등록 타입은 접두어 규칙으로, 그것도 없으면 원문을 유지한다. */
 const EXACT: Record<string, string> = {
-  "run.created": "새 목표가 접수되었습니다",
+  "run.created": "새 맡긴 일이 접수되었습니다",
   "run.transitioned": "진행 단계가 바뀌었습니다",
   "run.policy_denied": "정책이 실행을 거부했습니다",
   "risk.assessed": "위험도 판정이 완료되었습니다",

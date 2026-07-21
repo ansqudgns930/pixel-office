@@ -430,3 +430,20 @@ Acceptance criteria:
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Ran: `npm run delegated-work:browser-qa`
 - Result: PASS
+
+### 2026-07-21 — Delegated-work terminology and link sweep
+
+- Ran a broad terminology scan across `apps/web/src`, `scripts`, and `docs` for stale user-facing terms such as `프로젝트 워룸`, `실행 워크스페이스`, `통합 검색`, `운영 플랫폼`, `회사 목표`, and `오너 결정 센터`.
+- Updated active source copy:
+  - Error boundary link: `실행 워크스페이스로 이동` → `고급 실행으로 이동`.
+  - Run-created event label: `새 목표가 접수되었습니다` → `새 맡긴 일이 접수되었습니다`.
+  - Header activity button aria label: `통합 검색과 알림` → `결과·활동과 업무 신호`.
+  - Activity search aria label: `회사 통합 검색` → `결과·활동 근거 검색`.
+  - GoalsPage toast/empty aria copy: `회사 목표`/`목표` remnants → `맡긴 일`/`업무`.
+- Updated current redesign plan route map to the new delegated-work route semantics.
+- Updated legacy QA script labels to avoid obvious failures from renamed pages.
+- Left historical audit/completion docs intact where stale terms describe past phases or prior findings rather than current UI.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

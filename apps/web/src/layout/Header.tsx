@@ -26,7 +26,7 @@ export default function Header({ onToggleSidebar }: { onToggleSidebar: () => voi
       <div className="app-header-right">
         {companies.length>0&&<label className="inline" aria-label="현재 회사"><select value={companyId} onChange={event=>switchCompany(event.target.value)}><option value="">회사 선택</option>{companies.map(company=><option key={company.id} value={company.id}>{company.name}</option>)}</select></label>}
         {backend&&<span className="badge" aria-label={`현재 Agent Backend ${backend.host}, 모델 ${backend.model}`}>{backend.host} · {backend.model}</span>}
-        {companyId&&<button className="header-activity-button" aria-label={`통합 검색과 알림, 읽지 않음 ${unread}개`} onClick={()=>navigate(`/activity?companyId=${encodeURIComponent(companyId)}`)}><span aria-hidden="true">⌕</span>{unread>0&&<b>{unread>99?"99+":unread}</b>}</button>}
+        {companyId&&<button className="header-activity-button" aria-label={`결과·활동과 업무 신호, 읽지 않음 ${unread}개`} onClick={()=>navigate(`/activity?companyId=${encodeURIComponent(companyId)}`)}><span aria-hidden="true">⌕</span>{unread>0&&<b>{unread>99?"99+":unread}</b>}</button>}
         <div className="user-chip">
           <span className="avatar">{initial}</span>
           <span className="user-chip-text">
