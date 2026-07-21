@@ -584,7 +584,7 @@ Acceptance criteria:
 
 ### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
 
-Status: **In Progress — UX-P5 custom employee staffing slice implemented; live full smoke requires Node24/server restart**
+Status: **In Progress — UX-P6 execution provenance slice implemented; full live custom-employee smoke still requires Node24/server restart**
 
 Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
 
@@ -660,3 +660,19 @@ Acceptance criteria:
 - Ran: staffing rule unit smoke against `dist/packages/staffing-rules/src/index.js`
 - Ran: `npm run delegated-work:browser-qa` — PASS
 - Note: current live Control Plane remains pre-UX-P4/P5, so full browser smoke for saved custom employee → staffing preview should run after restarting with Node24 runtime.
+
+
+### 2026-07-21 — UX-P6 employee profile execution provenance slice
+
+- Added persisted Goal/Run employee profile snapshots in company ops: `goal_employee_profile_snapshots_v26`.
+- Added `snapshotGoalEmployeeProfiles()` and `goalEmployeeProfileSnapshots()` APIs.
+- Goal snapshots now include `employeeProfileSnapshots`, profile hash provenance, and a snapshot hash that accounts for the employee profiles used at launch time.
+- Updated Control Plane goal launch to accept recommended employee snapshot inputs and persist active employee profiles against the created Goal/Run.
+- Updated Company Home launch payload to send recommended custom employee ids/reasons from the staffing preview.
+- Updated GoalsPage to show `이 업무에 사용된 직원 profile` with employee name, role, version, reason, approval-required actions, and profile hash.
+- Extended `tests/goal-launch-api.test.ts` so goal launch verifies saved custom employee profile provenance.
+- Ran: `npm run typecheck` — PASS
+- Ran: `npm run build` — PASS
+- Ran: `npm --prefix apps/web run build` — PASS
+- Ran: `node --test dist/tests/goal-launch-api.test.js` — PASS
+- Note: `npm test -- tests/goal-launch-api.test.ts` is not a valid targeted TypeScript test invocation in this repo; it also runs existing dist tests and still hits the known Node22 `node:sqlite backup` issue.

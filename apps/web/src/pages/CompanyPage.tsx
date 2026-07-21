@@ -146,6 +146,7 @@ export default function CompanyPage() {
         budgetLimit,
         requestedRisk: planPreview.risk,
         requestedPaths: ["src"],
+        employeeProfileSnapshots: planPreview.recommendedEmployees?.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })) ?? [],
       });
       toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
       await load();

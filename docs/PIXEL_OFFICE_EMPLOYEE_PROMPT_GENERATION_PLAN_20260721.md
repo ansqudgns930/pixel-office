@@ -589,11 +589,20 @@ Acceptance criteria:
 
 ## UX-P6 — prompt profile versioning + audit
 
+Status: **Implemented — source/build/API test pass; full live smoke waits for Node24 runtime restart**
+
 Scope:
 
 - employee profile version 저장
 - Run/Goal에 사용된 profile snapshot 기록
 - 결과 보고 또는 Activity에서 사용된 직원/profile version 표시
+
+Implemented:
+
+- `goal_employee_profile_snapshots_v26` stores the active employee profile used when a delegated work Goal/Run is launched.
+- Goal snapshot includes `employeeProfileSnapshots` and profile-hash provenance.
+- Company Home sends recommended custom employee ids/reasons into goal launch.
+- GoalsPage shows the execution-time employee profile version, reason, approval-required actions, and profile hash.
 
 Acceptance criteria:
 

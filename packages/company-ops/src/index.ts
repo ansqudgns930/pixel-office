@@ -54,6 +54,20 @@ export interface EmployeePromptProfileRecord {
   reportTemplate: string;
   safetyConstraints: string[];
 }
+export interface GoalEmployeeProfileSnapshotRecord {
+  id: string;
+  companyId: string;
+  goalId: string;
+  runId: string | null;
+  principalId: string;
+  profileId: string;
+  profileVersion: number;
+  profile: EmployeeProfileRecord;
+  profileHash: string;
+  reason: string | null;
+  createdAt: string;
+}
+
 export interface EmployeeProfileRecord {
   id: string;
   companyId: string;
@@ -598,6 +612,8 @@ CREATE INDEX IF NOT EXISTS idx_goal_delivery_process_goal_v19 ON goal_delivery_p
 CREATE INDEX IF NOT EXISTS idx_goal_delivery_stage_process_v19 ON goal_delivery_stage_instances_v19(process_id,stage,attempt);
 CREATE TABLE IF NOT EXISTS employee_profiles_v25(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies_v4(id) ON DELETE CASCADE,principal_id TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('draft','active','archived')),version INTEGER NOT NULL,profile TEXT NOT NULL,generated_from TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(company_id,principal_id,status));
 CREATE INDEX IF NOT EXISTS idx_employee_profiles_v25_company ON employee_profiles_v25(company_id,status,principal_id);
+CREATE TABLE IF NOT EXISTS goal_employee_profile_snapshots_v26(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies_v4(id) ON DELETE CASCADE,goal_id TEXT NOT NULL REFERENCES company_goals_v12(id) ON DELETE CASCADE,run_id TEXT REFERENCES runs(id),principal_id TEXT NOT NULL,profile_id TEXT NOT NULL,profile_version INTEGER NOT NULL,profile TEXT NOT NULL,profile_hash TEXT NOT NULL,reason TEXT,created_at TEXT NOT NULL,UNIQUE(goal_id,principal_id));
+CREATE INDEX IF NOT EXISTS idx_goal_employee_profile_snapshots_v26_goal ON goal_employee_profile_snapshots_v26(company_id,goal_id);
 CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_bindings_v15(company_id,target_type,target_id,pipeline_role);
 `);
     const companyColumns = this.db
@@ -891,6 +907,31 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
       departmentId,
       kind,
     });
+  }
+
+
+  snapshotGoalEmployeeProfiles(companyId: string, goalId: string, runId: string | null, actorId: string, input: Array<{ principalId: string; reason?: string | null }>): GoalEmployeeProfileSnapshotRecord[] {
+    this.require(companyId, actorId, "manage-org");
+    const goal = this.goal(goalId);
+    if (!goal || goal.companyId !== companyId) throw new Error("Goal missing");
+    const timestamp = now(), results: GoalEmployeeProfileSnapshotRecord[] = [];
+    for (const item of input) {
+      const principalId = item.principalId.trim();
+      if (!principalId) continue;
+      const profile = this.employeeProfile(companyId, principalId, "active");
+      if (!profile) continue;
+      const profileHash = sha(stable(profile));
+      const record: GoalEmployeeProfileSnapshotRecord = { id: crypto.randomUUID(), companyId, goalId, runId, principalId, profileId: profile.id, profileVersion: profile.version, profile, profileHash, reason: item.reason ?? null, createdAt: timestamp };
+      this.db.prepare("INSERT OR REPLACE INTO goal_employee_profile_snapshots_v26(id,company_id,goal_id,run_id,principal_id,profile_id,profile_version,profile,profile_hash,reason,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)").run(record.id,companyId,goalId,runId,principalId,record.profileId,record.profileVersion,json(profile),profileHash,record.reason,record.createdAt);
+      results.push(record);
+    }
+    if (results.length) this.audit(companyId, "GOAL_EMPLOYEE_PROFILES_SNAPSHOTTED", { actorId, goalId, runId, principals: results.map(item => item.principalId), profileHashes: results.map(item => item.profileHash) });
+    return results;
+  }
+  goalEmployeeProfileSnapshots(companyId: string, goalId: string, actorId: string): GoalEmployeeProfileSnapshotRecord[] {
+    this.require(companyId, actorId, "view");
+    const rows = this.db.prepare("SELECT * FROM goal_employee_profile_snapshots_v26 WHERE company_id=? AND goal_id=? ORDER BY created_at,principal_id").all(companyId, goalId) as Array<Record<string, unknown>>;
+    return rows.map(row => ({ id: String(row.id), companyId: String(row.company_id), goalId: String(row.goal_id), runId: row.run_id == null ? null : String(row.run_id), principalId: String(row.principal_id), profileId: String(row.profile_id), profileVersion: Number(row.profile_version), profile: parse(String(row.profile)) as EmployeeProfileRecord, profileHash: String(row.profile_hash), reason: row.reason == null ? null : String(row.reason), createdAt: String(row.created_at) }));
   }
 
   setEmployeeProfile(companyId: string, actorId: string, profile: EmployeeProfileRecord): EmployeeProfileRecord {
@@ -4607,6 +4648,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
       ),
       metrics = this.goalMetrics(goalId),
       deliveryProcess = this.goalDeliveryProcess(companyId, goalId, actorId),
+      employeeProfileSnapshots = this.goalEmployeeProfileSnapshots(companyId, goalId, actorId),
       timeline = [
         { type: "goal.created", createdAt: goal.createdAt, goalId },
         ...(
@@ -4620,6 +4662,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
     return {
       goal,
       deliveryProcess,
+      employeeProfileSnapshots,
       metrics,
       projects,
       nextActions: [
@@ -4637,8 +4680,8 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
             : []),
       ],
       timeline,
-      provenance: projectIds.map((x) => `project:${x}`),
-      snapshotHash: sha(stable({ goal, deliveryProcess, metrics, projectIds })),
+      provenance: [...projectIds.map((x) => `project:${x}`), ...employeeProfileSnapshots.map(item => `employee-profile:${item.principalId}:${item.profileHash}`)],
+      snapshotHash: sha(stable({ goal, deliveryProcess, employeeProfileSnapshots: employeeProfileSnapshots.map(item => ({ principalId: item.principalId, profileHash: item.profileHash })), metrics, projectIds })),
     };
   }
   private goalMetrics(goalId: string): {
