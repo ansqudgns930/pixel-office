@@ -580,3 +580,21 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
+
+Status: **Proposed — planning doc created**
+
+Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
+
+Scope:
+- 사용자가 자연어로 필요한 직원을 대략 설명한다.
+- LLM이 직원명, 직무, 작업 방식, 권한, 금지 행동, 보고 형식, prompt profile을 구조화해 자동 생성한다.
+- 생성된 직원은 바로 실행되지 않고 commit gate에서 검토 후 채용된다.
+- 채용된 custom employee는 Company Home 업무 plan preview와 staffing plan에 자동 반영된다.
+
+Acceptance criteria:
+- 사용자가 raw system prompt를 직접 쓰지 않아도 직원을 만들 수 있다.
+- 외부 게시, 광고비, DM, 개인정보 등 위험 행동은 기본적으로 승인 필요 또는 금지로 보강된다.
+- employee profile은 기존 role prompt/security layer보다 높은 권한을 갖지 않는다.
