@@ -386,3 +386,18 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — ExecutionPage advanced execution/evidence slice
+
+- Reframed `ExecutionPage` from `실행 워크스페이스` to `고급 실행`.
+- Updated description to clarify this is the operator/admin detailed view for selected Task/Run planning, execution state, validation, Diff, and audit logs.
+- Added context card when any of `goalId`, `projectId`, `taskId`, or `runId` is present: `선택한 Task/Run의 고급 실행·증거 확인 화면입니다`.
+- Added context badges: `맡긴 일 연결`, `프로젝트 연결`, `Task 연결`, `Run 선택`, `계획·결과 승인`, `검증·Diff 근거`.
+- Added delegated-flow links from ExecutionPage to Pixel Office Live View, delegated-work detail, execution workroom, results/activity, and Decision Inbox.
+- Clarified direct Run creation as `고급 Run 직접 생성`, not the normal delegated-work starting point.
+- Reworded several headings: `다음 운영자 액션`, `Run 목표`, `Run Agent Backend Snapshot`, `검증 근거`, `파일별 변경 근거`, `고급 상세 데이터`.
+- Extended visual QA smoke with `advanced-execution` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

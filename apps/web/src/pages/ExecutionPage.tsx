@@ -79,6 +79,8 @@ export default function ExecutionPage() {
   const [busy, setBusy] = useState(false);
   const [linkTaskId, setLinkTaskId] = useState(() => searchParams.get("taskId") ?? "");
   const linkProjectId = searchParams.get("projectId") ?? "";
+  const companyId = searchParams.get("companyId") ?? localStorage.getItem("agent-company-os.lastCompany") ?? "";
+  const focusedGoalId = searchParams.get("goalId") ?? "";
 
   async function guarded(work: () => Promise<void>) {
     setBusy(true); setError(null);
@@ -170,7 +172,7 @@ export default function ExecutionPage() {
 
   return (
     <div>
-      <PageHeader title="실행 워크스페이스" description="Run의 진행 단계를 확인하고 계획·결과를 승인하며 파일별 변경을 검토합니다." />
+      <PageHeader title="고급 실행" description="선택한 Task/Run의 계획, 실행 상태, 검증 결과, Diff, 감사 로그를 고급 모드에서 확인합니다." />
 
       <div className="card">
         <div className="row">
@@ -181,11 +183,16 @@ export default function ExecutionPage() {
             </select>
           </label>
           <button className="secondary" disabled={busy} onClick={() => void guarded(async () => { await refreshRuns(); if (runId) setDetail(await apiGet<RunDetail>(`/api/runs/${encodeURIComponent(runId)}`)); })}>새로고침</button>
-          <Link className="button-link" to={officeUrl}>픽셀 오피스</Link>
+          <Link className="button-link" to={officeUrl}>픽셀 오피스 Live View</Link>
+          {companyId && <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>맡긴 일 상세</Link>}
+          {companyId && linkProjectId && <Link className="button-link" to={`/projects?companyId=${encodeURIComponent(companyId)}&projectId=${encodeURIComponent(linkProjectId)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>실행 작업실</Link>}
+          {companyId && <Link className="button-link" to={`/activity?companyId=${encodeURIComponent(companyId)}${focusedGoalId?`&goalId=${encodeURIComponent(focusedGoalId)}`:""}`}>결과·활동</Link>}
+          {companyId && <Link className="button-link" to={`/reviews?companyId=${encodeURIComponent(companyId)}`}>결정 필요</Link>}
         </div>
         <details className="new-run" open={linkTaskId ? true : undefined}>
-          <summary>새 Run 만들기</summary>
-          {linkTaskId && <p className="field-help">War Room에서 넘어온 Task용 Run입니다. 생성하면 자동으로 그 Task에 연결됩니다.</p>}
+          <summary>고급 Run 직접 생성</summary>
+          {linkTaskId && <p className="field-help">실행 작업실에서 넘어온 Task용 Run입니다. 생성하면 자동으로 그 Task에 연결됩니다.</p>}
+          {!linkTaskId && <p className="field-help">일반 업무 위임은 회사 홈에서 시작하세요. 이 영역은 Task/Run을 직접 만들거나 재실행하는 고급 실행 도구입니다.</p>}
           <div className="row" style={{ marginTop: 8 }}>
             <label className="inline">목표
               <input value={goal} onChange={e => setGoal(e.target.value)} placeholder="예: 설정 화면에 상태 배지 추가" />
@@ -204,7 +211,12 @@ export default function ExecutionPage() {
         {error && <p className="error" role="alert">{error}</p>}
       </div>
 
-      {!run && !error && <div className="empty-panel"><strong>Run을 선택하거나 새로 만드세요.</strong><span>선택하면 진행 단계, 승인, 파일별 Diff가 이 화면에 표시됩니다.</span></div>}
+      {(focusedGoalId || linkTaskId || linkProjectId || runId) && <section className="card" aria-label="선택 실행 컨텍스트">
+        <div className="section-heading"><div><span className="eyebrow">ADVANCED EXECUTION</span><h2>선택한 Task/Run의 고급 실행·증거 확인 화면입니다</h2><p>이 화면은 일반 업무 흐름의 시작점이 아니라, 실행 작업실에서 넘어온 Task와 Run의 계획 승인, 결과 승인, 검증 출력, Diff, 감사 로그를 확인하는 운영자용 상세 화면입니다.</p></div><span className="badge">{runId?shortId(runId,8):linkTaskId?shortId(linkTaskId,8):focusedGoalId?focusedGoalId.slice(0,8):"context"}</span></div>
+        <div className="badge-row">{focusedGoalId&&<span className="badge">맡긴 일 연결</span>}{linkProjectId&&<span className="badge">프로젝트 연결</span>}{linkTaskId&&<span className="badge">Task 연결</span>}{runId&&<span className="badge">Run 선택</span>}<span className="badge">계획·결과 승인</span><span className="badge">검증·Diff 근거</span></div>
+      </section>}
+
+      {!run && !error && <div className="empty-panel"><strong>고급 확인할 Run을 선택하거나 Task용 Run을 만드세요.</strong><span>선택하면 진행 단계, 승인 상태, 검증 결과, 파일별 Diff, 감사 로그가 표시됩니다.</span></div>}
 
       {run && status && (
         <>
@@ -226,7 +238,7 @@ export default function ExecutionPage() {
                 <span>{exception.hint}</span>
               </div>
             )}
-            <p className="next-action" role="status"><strong>다음 행동</strong><span>{nextAction}</span></p>
+            <p className="next-action" role="status"><strong>다음 운영자 액션</strong><span>{nextAction}</span></p>
             <div className="row" style={{ marginTop: 12 }}>
               <button title={!allowed("approve-plan")?unavailableReason:undefined} className={allowed("approve-plan") ? "" : "secondary"} disabled={busy || !allowed("approve-plan")} onClick={() => void runAction("approve-plan")}>계획 승인</button>
               <ConfirmButton label="결과 승인" confirmLabel="병합 후보 생성 — 한 번 더 눌러 확정" tone="accent" emphasis={allowed("approve-result")} disabled={busy || !allowed("approve-result")} onConfirm={() => void runAction("approve-result")} />
@@ -249,11 +261,11 @@ export default function ExecutionPage() {
             </div>
           </div>
 
-          <p className={`run-goal${safeUserText(run.goal)!==run.goal.trim()?" text-warning":""}`}><strong>목표</strong> {safeUserText(run.goal)}</p>
+          <p className={`run-goal${safeUserText(run.goal)!==run.goal.trim()?" text-warning":""}`}><strong>Run 목표</strong> {safeUserText(run.goal)}</p>
 
           {(detail?.agentBindings?.length ?? 0) > 0 && (
             <section className="card" aria-label="Run Agent Backend">
-              <h2>Agent Backend</h2>
+              <h2>Run Agent Backend Snapshot</h2>
               <div className="badge-row">
                 {detail!.agentBindings.map(binding => <span className="badge" key={binding.role}><strong>{binding.role}</strong> · {binding.backend} · {binding.modelId} · {binding.resolution}</span>)}
               </div>
@@ -262,7 +274,7 @@ export default function ExecutionPage() {
 
           <div className="grid">
             <section className="card" aria-label="검증 결과">
-              <h2>검증 결과</h2>
+              <h2>검증 근거</h2>
               {validations.length ? (
                 <ul className="validation-list">
                   {validations.map((item, index) => (
@@ -278,7 +290,7 @@ export default function ExecutionPage() {
             </section>
 
             <section className="card" aria-label="파일별 변경 검토">
-              <h2>파일별 Diff</h2>
+              <h2>파일별 변경 근거</h2>
               {detail?.result && <p className="diff-meta">Patch <code>{detail.result.patchHash.slice(0, 12)}…</code> · 파일 {fileDiffs.length}개</p>}
               {fileDiffs.length
                 ? fileDiffs.map(file => (
@@ -292,7 +304,7 @@ export default function ExecutionPage() {
           </div>
 
           <section className="card" aria-label="상세 데이터">
-            <h2>상세 데이터</h2>
+            <h2>고급 상세 데이터</h2>
             <details><summary>아티팩트·영향·컨텍스트·병합 (아티팩트 {detail?.phase2.artifacts.length ?? 0} · 관계 {detail?.phase2.relations.length ?? 0} · stale {detail?.phase2.stale.length ?? 0})</summary><pre>{JSON.stringify(detail?.phase2, null, 2)}</pre></details>
             <details><summary>감사 로그 ({detail?.audit.length ?? 0}건)</summary><pre>{JSON.stringify(detail?.audit, null, 2)}</pre></details>
           </section>
