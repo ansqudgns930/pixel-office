@@ -42,29 +42,34 @@ export default function OperationsPage() {
 
   return (
     <div>
-      <PageHeader title="운영 상태 센터" description="서비스 상태와 회사별 실시간 업무 이벤트를 확인합니다." />
+      <PageHeader title="운영 건강도" description="AI 회사가 정상적으로 일하고 있는지, 데이터·대기열·실시간 신호에 문제가 없는지 확인합니다." />
 
       <div className="card">
         <div className="row">
-          <label className="inline">이벤트 회사
+          <label className="inline">확인할 회사
             <select value={companyId} onChange={e => {setCompanyId(e.target.value);localStorage.setItem("agent-company-os.lastCompany",e.target.value);}}><option value="">회사를 선택하세요</option>{companies.map(company=><option key={company.id} value={company.id}>{company.name}</option>)}</select>
           </label>
-          <button disabled={busy} onClick={() => void checkHealth()}>{busy?"확인 중…":"상태 새로고침"}</button>
-          {streamState==="connected"||streamState==="connecting"?<button className="secondary" onClick={disconnect}>연결 해제</button>:<button className="secondary" disabled={!companyId} onClick={connect}>이벤트 스트림 연결</button>}
-          <span className={`stream-status stream-${streamState}`} role="status"><span className="status-dot"/>{streamState==="connected"?"실시간 연결됨":streamState==="connecting"?"연결 중":streamState==="disconnected"?"연결 해제됨":"연결 안 됨"}{lastEventAt&&` · 마지막 이벤트 ${new Date(lastEventAt).toLocaleTimeString()}`}</span>
+          <button disabled={busy} onClick={() => void checkHealth()}>{busy?"확인 중…":"건강도 새로고침"}</button>
+          {streamState==="connected"||streamState==="connecting"?<button className="secondary" onClick={disconnect}>연결 해제</button>:<button className="secondary" disabled={!companyId} onClick={connect}>업무 신호 연결</button>}
+          <span className={`stream-status stream-${streamState}`} role="status"><span className="status-dot"/>{streamState==="connected"?"업무 신호 연결됨":streamState==="connecting"?"업무 신호 연결 중":streamState==="disconnected"?"업무 신호 해제됨":"업무 신호 미연결"}{lastEventAt&&` · 마지막 이벤트 ${new Date(lastEventAt).toLocaleTimeString()}`}</span>
         </div>
         {error && <p className="error">{error}</p>}
       </div>
 
+      <section className="card" aria-label="운영 건강도 안내">
+        <div className="section-heading"><div><span className="eyebrow">OPERATIONS HEALTH</span><h2>업무 운영에 문제가 생기면 여기서 먼저 확인합니다</h2><p>이 화면은 사용자가 맡긴 일이 멈췄는지, 백엔드 데이터와 작업 대기열이 정상인지, 새 위험 신호가 들어오는지 확인하는 운영 관제 화면입니다.</p></div><span className="badge">{companyId?companyId.slice(0,8):"company"}</span></div>
+        <div className="badge-row"><span className="badge">서비스 건강도</span><span className="badge">운영 데이터</span><span className="badge">작업 대기열</span><span className="badge">업무 신호</span></div>
+      </section>
+
       {health && (
-        <><p className="data-freshness">마지막 상태 확인 {healthCheckedAt?.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</p><div className="stat-grid" style={{ marginTop: 8 }}>
-          <div className="stat-tile"><div className="label">전체 서비스</div><div className="value health-value" style={{ fontSize: 15 }}><span className="status-dot status-good"/>정상</div><div className="status-row">API 요청 처리 가능</div></div>
-          <div className="stat-tile"><div className="label">운영 데이터</div><div className="value health-value" style={{ fontSize: 15 }}><span className="status-dot status-good"/>{health.sqlite==="ready"?"정상":health.sqlite}</div><div className="status-row">SQLite 연결</div></div>
-          <div className="stat-tile"><div className="label">작업 대기열</div><div className="value health-value" style={{ fontSize: 15 }}><span className={`status-dot ${health.redis==="ready"?"status-good":"status-warning"}`}/>{health.redis==="ready"?"정상":health.redis??"확인 필요"}</div><div className="status-row">Redis 연결</div></div>
-          <div className="stat-tile"><div className="label">데이터 구조</div><div className="value" style={{fontSize:15}}>내부 버전 {health.schemaVersion ?? "-"}</div><div className="status-row">운영 호환성 정보</div></div>
+        <><p className="data-freshness">마지막 건강도 확인 {healthCheckedAt?.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</p><div className="stat-grid" style={{ marginTop: 8 }}>
+          <div className="stat-tile"><div className="label">서비스 건강도</div><div className="value health-value" style={{ fontSize: 15 }}><span className="status-dot status-good"/>정상</div><div className="status-row">업무 화면과 API 요청 처리 가능</div></div>
+          <div className="stat-tile"><div className="label">운영 데이터</div><div className="value health-value" style={{ fontSize: 15 }}><span className="status-dot status-good"/>{health.sqlite==="ready"?"정상":health.sqlite}</div><div className="status-row">회사·업무·Run 상태 저장소</div></div>
+          <div className="stat-tile"><div className="label">작업 대기열</div><div className="value health-value" style={{ fontSize: 15 }}><span className={`status-dot ${health.redis==="ready"?"status-good":"status-warning"}`}/>{health.redis==="ready"?"정상":health.redis??"확인 필요"}</div><div className="status-row">Agent 실행·비동기 작업 신호</div></div>
+          <div className="stat-tile"><div className="label">데이터 구조</div><div className="value" style={{fontSize:15}}>내부 버전 {health.schemaVersion ?? "-"}</div><div className="status-row">현재 데이터 스키마 호환성</div></div>
         </div></>
       )}
-      <section className="card event-stream-panel" style={{marginTop:12}}><header><div><h2>실시간 이벤트</h2><p>{events.length}건 수신 · 최근 200건 유지</p></div>{events.length>0&&<button className="secondary compact" onClick={()=>setEvents([])}>목록 비우기</button>}</header>{events.length?<ol>{events.map((event,index)=><li key={`${event.sequence??"event"}:${index}`}><span className="event-sequence">#{event.sequence??"-"}</span><div><strong>{event.type??"unknown"}</strong><small>{event.runId??event.actor?.id??"회사 이벤트"}</small></div><time>{event.occurredAt?new Date(event.occurredAt).toLocaleTimeString():"방금"}</time></li>)}</ol>:<div className="empty-panel"><strong>수신된 이벤트가 없습니다.</strong><span>스트림을 연결하면 새 이벤트가 여기에 실시간으로 추가됩니다.</span></div>}</section>
+      <section className="card event-stream-panel" style={{marginTop:12}}><header><div><h2>업무 신호</h2><p>{events.length}건 수신 · 최근 200건 유지</p></div>{events.length>0&&<button className="secondary compact" onClick={()=>setEvents([])}>목록 비우기</button>}</header>{events.length?<ol>{events.map((event,index)=><li key={`${event.sequence??"event"}:${index}`}><span className="event-sequence">#{event.sequence??"-"}</span><div><strong>{event.type??"unknown"}</strong><small>{event.runId??event.actor?.id??"회사 이벤트"}</small></div><time>{event.occurredAt?new Date(event.occurredAt).toLocaleTimeString():"방금"}</time></li>)}</ol>:<div className="empty-panel"><strong>수신된 업무 신호가 없습니다.</strong><span>업무 신호를 연결하면 Run, 검증, 결정, 오류 이벤트가 여기에 실시간으로 추가됩니다.</span></div>}</section>
     </div>
   );
 }

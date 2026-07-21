@@ -401,3 +401,18 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — OperationsPage operations health slice
+
+- Reframed `OperationsPage` from `운영 상태 센터` to `운영 건강도`.
+- Updated page description to explain that this screen checks whether the AI company can keep working normally.
+- Added operations health guidance card: `업무 운영에 문제가 생기면 여기서 먼저 확인합니다`.
+- Added health badges: `서비스 건강도`, `운영 데이터`, `작업 대기열`, `업무 신호`.
+- Reworded stream controls from generic event stream language to `업무 신호` language.
+- Reworded health tiles to connect backend health to user-facing delegated-work reliability.
+- Reworded empty stream state: Run, validation, decision, and error events appear as live work signals.
+- Extended visual QA smoke with `operations-health` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
