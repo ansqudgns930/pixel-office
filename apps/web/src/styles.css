@@ -480,3 +480,81 @@ button.confirm-accent { background:var(--accent); border-color:var(--accent); co
 .employee-hiring-intro textarea{width:100%;min-height:110px;resize:vertical;margin:0}.employee-draft-preview{display:grid;gap:10px;margin-top:8px;padding:10px;border:1px solid var(--border-subtle);border-radius:var(--radius);background:rgba(56,139,253,.06)}
 
 .custom-staffing-callout{display:grid;gap:6px;margin-top:10px;padding:10px;border:1px solid rgba(117,215,139,.35);border-radius:var(--radius);background:rgba(117,215,139,.07)}.custom-staffing-callout p{margin:0;color:var(--text-secondary)}.custom-staffing-callout span{color:var(--text);font-weight:700}
+
+
+/* UX-Q1: delegated goal detail trust polish */
+.goals-page{
+  --goal-border:var(--border-subtle);
+  --goal-soft:rgba(56,139,253,.1);
+  --goal-ink:var(--text);
+  color:var(--text);
+}
+.goal-workspace{grid-template-columns:minmax(280px,340px) minmax(560px,1fr)}
+.goal-sidebar,.goal-detail{
+  background:linear-gradient(180deg,var(--surface),var(--surface-sunken));
+  border-color:var(--border-subtle);
+  box-shadow:0 16px 42px rgba(0,0,0,.22);
+}
+.goal-sidebar-heading,.goal-create,.goal-detail-header{border-color:var(--border-subtle)}
+.goal-sidebar-heading h2,.goal-empty strong,.goal-detail-empty h2,.goal-title-line h2,.goal-kpis strong{color:var(--text)}
+.goal-count{background:rgba(117,215,139,.12);color:#75d78b;border:1px solid rgba(117,215,139,.22)}
+.goal-list-item{background:transparent;color:var(--text);border-bottom-color:var(--border-subtle)}
+.goal-list-item:hover{background:rgba(255,255,255,.04)}
+.goal-list-item.selected{background:rgba(56,139,253,.14);box-shadow:inset 3px 0 var(--accent)}
+.goal-list-item strong,.goal-project>header a,.goal-board-column article strong,.goal-board-column>header strong,.goal-timeline article strong{color:var(--text)}
+.goal-list-item small,.goal-detail-header p,.goal-meta span,.goal-kpis span,.goal-kpis small,.goal-evidence,.muted,.goal-board-column article small,.goal-board-column article span,.goal-timeline time{color:var(--text-muted)}
+.goal-progress{background:var(--surface-raised)}
+.goal-title-line{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:10px}
+.goal-title-line h2{
+  max-width:100%;
+  font-size:clamp(20px,2.15vw,28px);
+  line-height:1.28;
+  letter-spacing:-.02em;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+  text-wrap:balance;
+}
+.goal-detail-header{align-items:flex-start}.goal-actions{max-width:280px;flex-wrap:wrap;justify-content:flex-end}.goal-actions button{white-space:nowrap}
+.goal-meta span,.goal-next-actions,.goal-kpis article,.goal-project,.goal-board-column,.goal-board-column article,.goal-detail-empty.compact{background:var(--surface-raised);border-color:var(--border-subtle)}
+.goal-kpis article.warning{background:rgba(232,196,106,.1);border-color:rgba(232,196,106,.35)}
+.goal-kpis article.danger{background:rgba(255,141,133,.1);border-color:rgba(255,141,133,.35)}
+.goal-next-actions{align-items:flex-start;flex-wrap:wrap;color:var(--text);border:1px solid var(--border-subtle)}
+.goal-next-actions>span{background:rgba(255,255,255,.04);border-color:var(--border-subtle);color:var(--text-secondary);line-height:1.4}
+.goal-project>header{background:rgba(255,255,255,.035)}
+.goal-milestone{border-top-color:var(--border-subtle)}
+.goal-milestone-title span{color:var(--text-muted)}
+.goal-task{grid-template-columns:auto minmax(180px,1fr) auto auto;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04)}
+.goal-board-column>header span{background:var(--surface-sunken);color:var(--text-secondary)}
+.goal-view-tabs{border-bottom-color:var(--border-subtle)}
+.goal-view-tabs button{color:var(--text-muted)}
+.goal-view-tabs button.active{background:rgba(56,139,253,.14);color:#b9d8ff;box-shadow:inset 0 -2px var(--accent)}
+.goal-timeline:before{background:var(--border-subtle)}
+.goal-timeline i{border-color:var(--surface);box-shadow:0 0 0 1px var(--accent)}
+.goal-automation{background:rgba(56,139,253,.08);border-color:rgba(56,139,253,.28)}
+.goal-automation ol{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.goal-automation li{align-items:flex-start;padding:9px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.035);line-height:1.35}
+.goal-automation li span{display:block;min-width:0;overflow-wrap:anywhere}.goal-automation li i{background:var(--surface);border-color:var(--border);color:var(--text-secondary)}
+.goal-automation li.done i{background:rgba(117,215,139,.16);border-color:rgba(117,215,139,.55);color:#9be7ad}
+.goal-automation li.current i{background:rgba(56,139,253,.16);border-color:rgba(56,139,253,.6);color:#b9d8ff}
+.goal-delivery{background:var(--surface);border-color:var(--border-subtle)}
+.delivery-state{max-width:none;background:rgba(56,139,253,.14);color:#b9d8ff;border:1px solid rgba(56,139,253,.25);text-align:left}
+.delivery-stepper{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.delivery-stepper li{padding:12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-sunken)}
+.delivery-stepper li:not(:last-child)::after{display:none}
+.delivery-stepper strong{color:var(--text);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.delivery-stepper small{color:var(--text-muted);overflow-wrap:normal;word-break:keep-all}
+.delivery-stepper i{background:var(--surface);border-color:var(--border);color:var(--text-secondary)}
+.delivery-current,.delivery-empty{background:var(--surface-raised);border:1px solid var(--border-subtle)}
+.delivery-current h4,.delivery-empty strong{color:var(--text)}
+.employee-provenance.card,.completion-reward.card{background:var(--surface);border-color:var(--border-subtle);color:var(--text)}
+@media(max-width:1180px){.goal-workspace{grid-template-columns:1fr}.goal-sidebar{position:static}.goal-list{display:flex;overflow-x:auto;max-height:none}.goal-list-item{min-width:260px;border-right:1px solid var(--border-subtle)}}
+@media(max-width:720px){.goal-title-line h2{font-size:20px}.goal-detail-header{gap:12px}.goal-actions{max-width:none;justify-content:flex-start}.goal-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.goal-task{grid-template-columns:auto minmax(0,1fr)}.goal-task .goal-evidence,.goal-task a,.goal-task .muted{grid-column:2}.delivery-stepper{grid-template-columns:1fr}.delivery-stepper li:not(:last-child)::after{display:none}}
+@media(max-width:520px){.goal-kpis{grid-template-columns:1fr}.goal-list-item{min-width:235px}.goal-title-line{grid-template-columns:1fr}.goal-status{width:max-content}.goal-link-project{grid-template-columns:1fr}.goal-link-project button{width:100%}}
+
+
+/* UX-Q2: work action transition feedback */
+.work-action-progress{display:flex;align-items:flex-start;gap:12px;margin-top:12px;padding:13px 14px;border:1px solid rgba(56,139,253,.32);border-radius:12px;background:rgba(56,139,253,.1);color:var(--text)}
+.work-action-progress .loading-spinner{width:22px;height:22px;border-width:3px}
+.work-action-progress strong{display:block;margin-bottom:3px;color:var(--text)}
+.work-action-progress p{margin:0;color:var(--text-secondary);font-size:12px;line-height:1.45}
+@media(max-width:520px){.work-action-progress{padding:12px}.work-action-progress p{font-size:11.5px}}

@@ -90,6 +90,7 @@ export default function CompanyPage() {
   const [snapshot, setSnapshot] = useState<CompanyCommandCenterSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [workAction, setWorkAction] = useState<null | "planning" | "launching">(null);
   const [activeTab, setActiveTab] = useState<"overview" | "organization" | "briefing">("overview");
   const [companies,setCompanies]=useState<Array<CompanyRecord&{role:string;projectCount:number}>>([]),[hiddenCompanies,setHiddenCompanies]=useState(0);
   const [health,setHealth]=useState<{metrics:{completedRuns:number;qualityPasses:number;validationFailures:number;incidents:number}}|null>(null);
@@ -116,6 +117,7 @@ export default function CompanyPage() {
   useEffect(() => { void apiGet<Array<CompanyRecord&{role:string;projectCount:number}>>(`/api/companies?actor=${encodeURIComponent(actorId)}`).then(items=>{const received=Array.isArray(items),valid=(received?items:[]).filter(item=>item.status==="active");const requested=params.get("companyId")||companyId,visible=userFacingCompanyOptions(valid,requested);setCompanies(visible);setHiddenCompanies(hiddenCompanyCount(valid,requested));const selected=visible.some(item=>item.id===requested)?requested:received?visible[0]?.id:requested;if(selected)void load(selected);else{setCompanyId("");setSnapshot(null);}}).catch(e=>{const requested=params.get("companyId")||companyId;if(requested)void load(requested);else setError(e instanceof Error?e.message:String(e));}); }, []);
 
   function proposeWorkPlan() {
+    setWorkAction("planning");
     return guarded(async () => {
       const request = workRequest.trim();
       if (!request) {
@@ -129,11 +131,12 @@ export default function CompanyPage() {
       ]);
       const completionCriteria = draft.completionCriteria.length ? draft.completionCriteria : ["요청한 업무가 적용되어야 합니다.", "빌드 또는 관련 검증이 통과해야 합니다.", "결과 보고에 변경 내용과 검증 근거가 포함되어야 합니다."];
       setPlanPreview({ draft: { ...draft, completionCriteria }, ...staffing });
-    });
+    }).finally(() => setWorkAction(null));
   }
 
   function launchWorkPlan() {
     if (!planPreview || !portfolio) return;
+    setWorkAction("launching");
     return guarded(async () => {
       const budgetLimit = Math.max(1, Math.min(10, Number(portfolio.company.budgetLimit) || 10));
       const result = await apiPost<{goal:{id:string};provisioning:{runId:string}}>(`/api/companies/${encodeURIComponent(companyId)}/goals/launch`, {
@@ -151,7 +154,7 @@ export default function CompanyPage() {
       toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
       await load();
       navigate(`/goals?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(result.goal.id)}&launched=1`);
-    });
+    }).finally(() => setWorkAction(null));
   }
 
   function createDepartment() {
@@ -233,10 +236,11 @@ export default function CompanyPage() {
           aria-label="AI 회사에 맡길 업무"
         />
         <div className="row" style={{ marginTop: 8 }}>
-          <button disabled={busy || !companyId || !workRequest.trim()} onClick={proposeWorkPlan}>AI 팀에게 계획 요청</button>
+          <button disabled={busy || !companyId || !workRequest.trim()} onClick={proposeWorkPlan}>{workAction==="planning"?"AI 팀이 계획을 만드는 중…":"AI 팀에게 계획 요청"}</button>
           <Link className="button-link" to={companyId ? `/goals?companyId=${encodeURIComponent(companyId)}` : "/goals"}>맡긴 일 보기</Link>
           <Link className="button-link" to={companyId ? `/reviews?companyId=${encodeURIComponent(companyId)}` : "/reviews"}>결정 필요 보기</Link>
         </div>
+        {workAction&&<div className="work-action-progress" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true"/><div><strong>{workAction==="planning"?"AI 팀이 계획을 만드는 중입니다":"AI 회사에 업무를 맡기는 중입니다"}</strong><p>{workAction==="planning"?"요청을 분석하고, 투입 직원과 실행 순서, 결정 필요 지점을 정리하고 있습니다.":"목표를 만들고, 실행 프로젝트와 담당 Agent, 첫 Run을 연결하고 있습니다."}</p></div></div>}
         {planPreview && (
           <div className="recommendation" style={{ marginTop: 12, borderLeftColor: "#3fb950" }}>
             <strong>AI 계획 제안</strong>
@@ -300,7 +304,7 @@ export default function CompanyPage() {
             </section>
             {planPreview.draft.warnings.length > 0 && <p className="field-help">{planPreview.draft.warnings.map(draftWarningLabel).join(" ")}</p>}
             <div className="row" style={{ marginTop: 8 }}>
-              <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>이 계획으로 AI 회사에 맡기기</button>
+              <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>{workAction==="launching"?"AI 회사에 맡기는 중…":"이 계획으로 AI 회사에 맡기기"}</button>
               <button className="secondary" onClick={() => setPlanPreview(null)}>계획 수정</button>
               <Link className="button-link" to={companyId ? `/settings/backend?companyId=${encodeURIComponent(companyId)}` : "/settings/backend"}>고급 설정</Link>
               <Link className="button-link" to={companyId ? `/employees?companyId=${encodeURIComponent(companyId)}` : "/employees"}>투입 직원 보기</Link>

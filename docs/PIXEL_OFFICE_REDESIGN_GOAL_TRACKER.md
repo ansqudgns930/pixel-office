@@ -715,3 +715,17 @@ Acceptance criteria:
 - Added `tests/employee-drafting-security.test.ts` covering malicious model JSON that attempts to bypass approval/security rules.
 - Validation passed: `npm run typecheck`, `npm run build`, `node --test dist/tests/employee-drafting-security.test.js dist/tests/employee-workflow-api.test.js`, tracked secret scan `[]`.
 - This is post-release hardening after `v0.1.0-pixel-office-redesign`; the release tag remains on the validated release closeout commit.
+
+
+### 2026-07-22 — UX-Q1/Q2 live UI polish
+
+- UX-Q1: polished the delegated-work `GoalsPage` detail surface after direct UI review found white-card contrast, narrow Korean title wrapping, and automation/delivery stepper density issues after launch.
+  - Goals detail/sidebar now inherit the dark app shell more consistently.
+  - Long delegated-work titles use safer width/wrapping rules.
+  - Automation and delivery stage steppers use card-like responsive items instead of cramped connector rows.
+  - Desktop and narrow layouts were checked directly in the browser.
+- UX-Q2: strengthened launch transition feedback on `CompanyPage`.
+  - Planning request button now changes to `AI 팀이 계획을 만드는 중…`.
+  - Launch button now changes to `AI 회사에 맡기는 중…`.
+  - Added a visible progress status banner for planning/launch actions so the UI no longer looks stalled while work is being delegated.
+- Validation: `npm run typecheck` and `npm --prefix apps/web run build` passed before commit.
