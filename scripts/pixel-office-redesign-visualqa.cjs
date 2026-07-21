@@ -36,6 +36,7 @@ async function main() {
     { name: 'execution-workroom', url: `/projects?companyId=${companyId}&projectId=demo-first-delivery&goalId=demo-company-goal`, required: ['실행 작업실', '선택한 맡긴 일의 실행 작업실입니다', 'Task 분해', '담당 배정', '검증 설정'] },
     { name: 'advanced-execution', url: `/execution?companyId=${companyId}&projectId=demo-first-delivery&taskId=demo-first-delivery-task&goalId=demo-company-goal`, required: ['고급 실행', '선택한 Task/Run의 고급 실행·증거 확인 화면입니다', '계획·결과 승인', '검증·Diff 근거', '고급 Run 직접 생성'] },
     { name: 'operations-health', url: `/operations?companyId=${companyId}`, required: ['운영 건강도', '업무 운영에 문제가 생기면 여기서 먼저 확인합니다', '서비스 건강도', '작업 대기열', '업무 신호'] },
+    { name: 'platform-admin', url: `/platform?companyId=${companyId}`, required: ['플랫폼 관리', '일반 업무 흐름이 아닌 관리자 설정 화면입니다', 'Workflow 관리', '산업 템플릿', '어댑터 상태'] },
     { name: 'pixel-live-view', url: `/pixel-office?companyId=${companyId}`, required: ['진행 상황 Live View', '새 업무 맡기기', '결정 필요 처리', '직원·AI팀 보기'] },
     { name: 'pixel-goal-focus', url: `/pixel-office?companyId=${companyId}&goalId=demo-company-goal`, required: ['선택 목표 추적 중', '목표 상세', '결정 필요', '결과·활동', '진행 업무'] },
     { name: 'backend-settings', url: `/settings/backend?companyId=${companyId}`, required: ['설정 · AI 엔진', '회사 기본 AI 엔진', 'Planner / PM', 'Worker / Developer', 'Reviewer / QA', '저장 전 요약', 'Live Run snapshot 검증'] },

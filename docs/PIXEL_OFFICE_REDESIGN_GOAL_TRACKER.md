@@ -416,3 +416,17 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — PlatformPage admin platform slice
+
+- Reframed `PlatformPage` from `운영 플랫폼` to `플랫폼 관리`.
+- Updated description to clarify this is an admin-only company operating infrastructure screen.
+- Added admin guidance card: `일반 업무 흐름이 아닌 관리자 설정 화면입니다`.
+- Added admin badges: `Workflow 관리`, `산업 템플릿`, `조직 확장 추천`, `어댑터 상태`.
+- Reworded platform query, empty state, tabs, freshness copy, metrics guidance, recommendations, Workflow, and industry template copy toward administrator-managed infrastructure.
+- Fixed copy regression caused by a broad replacement that changed `일반 업무 흐름` into broken `일반 WORKFLOW 관리`; restored intended Korean copy.
+- Extended visual QA smoke with `platform-admin` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Ran: `npm run delegated-work:browser-qa`
+- Result: PASS

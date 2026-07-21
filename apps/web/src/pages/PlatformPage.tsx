@@ -91,29 +91,34 @@ export default function PlatformPage() {
 
   return (
     <div>
-      <PageHeader title="운영 플랫폼" description="지표·조직 확장 추천·게임 상태·Workflow·산업 템플릿을 관리합니다." />
+      <PageHeader title="플랫폼 관리" description="관리자용 회사 운영 인프라 화면입니다. Workflow, 산업 템플릿, 확장 추천, 어댑터 상태를 변경 전에 검토합니다." />
 
       <div className="card">
         <div className="row">
           <label className="inline">회사
             <select value={companyId} onChange={e => {setCompanyId(e.target.value);setSnapshot(null);}}><option value="">회사를 선택하세요</option>{companies.map(company=><option key={company.id} value={company.id}>{company.name}</option>)}</select>
           </label>
-          <button disabled={busy || !companyId} onClick={() => void load()}>{busy?"불러오는 중…":"플랫폼 조회"}</button>
+          <button disabled={busy || !companyId} onClick={() => void load()}>{busy?"불러오는 중…":"관리 상태 조회"}</button>
         </div>
         {error && <p className="error">{error}</p>}
       </div>
 
-      {!snapshot&&!error&&<div className="empty-panel"><strong>회사를 선택해 운영 지표를 확인하세요.</strong><span>Workflow, 산업 템플릿, 확장 추천이 이 화면에 표시됩니다.</span></div>}
+      {companyId&&<section className="card" aria-label="플랫폼 관리 안내">
+        <div className="section-heading"><div><span className="eyebrow">ADMIN PLATFORM</span><h2>일반 업무 흐름이 아닌 관리자 설정 화면입니다</h2><p>사용자는 회사 홈에서 일을 맡기고, 이 화면에서는 운영자가 Workflow 게시, 산업 템플릿 설치, 조직 확장 추천, 어댑터 상태를 검토합니다.</p></div><span className="badge">admin</span></div>
+        <div className="badge-row"><span className="badge">Workflow 관리</span><span className="badge">산업 템플릿</span><span className="badge">조직 확장 추천</span><span className="badge">어댑터 상태</span></div>
+      </section>}
+
+      {!snapshot&&!error&&<div className="empty-panel"><strong>회사를 선택해 플랫폼 관리 상태를 확인하세요.</strong><span>Workflow, 산업 템플릿, 확장 추천, 어댑터 상태가 이 관리자 화면에 표시됩니다.</span></div>}
 
       {snapshot && metrics && (
         <>
-          <nav className="section-tabs" aria-label="운영 플랫폼 영역">
-            <button className={activeTab==="overview"?"active":""} aria-pressed={activeTab==="overview"} onClick={()=>setActiveTab("overview")}>운영 현황</button>
+          <nav className="section-tabs" aria-label="플랫폼 관리 영역">
+            <button className={activeTab==="overview"?"active":""} aria-pressed={activeTab==="overview"} onClick={()=>setActiveTab("overview")}>관리 현황</button>
             <button className={activeTab==="workflow"?"active":""} aria-pressed={activeTab==="workflow"} onClick={()=>setActiveTab("workflow")}>업무 흐름</button>
             <button className={activeTab==="industry"?"active":""} aria-pressed={activeTab==="industry"} onClick={()=>setActiveTab("industry")}>산업 템플릿</button>
           </nav>
-          {activeTab==="overview"&&<p className="data-freshness">마지막 갱신 {lastUpdated?.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})??"-"} · 완료된 표본 3건부터 비율 상태를 판정합니다.</p>}
-          {activeTab==="overview"&&metrics.sampleCount<3&&<div className="measurement-guidance"><strong>비율 판정까지 완료 표본 {3-metrics.sampleCount}건이 더 필요합니다.</strong><span>표본이 쌓이기 전에는 0%를 실패로 판단하지 않습니다.</span></div>}
+          {activeTab==="overview"&&<p className="data-freshness">관리 상태 마지막 갱신 {lastUpdated?.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})??"-"} · 완료된 표본 3건부터 플랫폼 지표 상태를 판정합니다.</p>}
+          {activeTab==="overview"&&metrics.sampleCount<3&&<div className="measurement-guidance"><strong>관리 지표 판정까지 완료 표본 {3-metrics.sampleCount}건이 더 필요합니다.</strong><span>표본이 쌓이기 전에는 0%를 운영 실패로 판단하지 않습니다.</span></div>}
           <div hidden={activeTab!=="overview"} className="stat-grid" style={{ marginTop: 12 }}>
             <div className="stat-tile">
               <div className="label">완료율</div>
@@ -158,7 +163,7 @@ export default function PlatformPage() {
 
           {recommendations.length > 0 && (
             <div hidden={activeTab!=="overview"} style={{ marginTop: 16 }}>
-              <div className="label" style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>조직 확장 추천 (승인 필요)</div>
+              <div className="label" style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>조직 확장 추천 · 관리자 검토 필요</div>
               {recommendations.map((item, index) => (
                 <div key={index} className="recommendation">
                   <div>{recommendationReason(item)}</div>
@@ -175,7 +180,7 @@ export default function PlatformPage() {
           )}
 
           <div hidden={activeTab!=="workflow"} className="card" style={{ marginTop: 16 }}>
-            <h2>업무 흐름</h2><p className="section-description">초안을 검증한 뒤 게시하면 새 업무부터 적용됩니다.</p>
+            <h2>Workflow 관리</h2><p className="section-description">초안을 검증한 뒤 게시하면 이후 맡긴 일부터 적용됩니다. 이미 실행 중인 업무에는 소급 적용하지 않습니다.</p>
             {snapshot.workflows.map(wf => (
               <div key={wf.id} className="recommendation" style={{ borderLeftColor: wf.status === "published" ? "#0ca30c" : wf.status === "validated" ? "#fab219" : "#4b5563" }}>
                 <div>{wf.name} <span className="action">v{wf.version} · {wf.status}</span></div>
@@ -198,13 +203,13 @@ export default function PlatformPage() {
               <label className="inline">예산
                 <input type="number" value={workflowBudget} onChange={e => setWorkflowBudget(e.target.value)} />
               </label>
-              <button disabled={busy || !workflowId || !workflowName} onClick={() => void createWorkflow()}>Workflow 초안 생성</button>
+              <button disabled={busy || !workflowId || !workflowName} onClick={() => void createWorkflow()}>관리 Workflow 초안 생성</button>
             </div>
           </div>
 
           <div hidden={activeTab!=="industry"} className="card" style={{ marginTop: 16 }}>
             <h2>산업 템플릿</h2>
-            <p className="section-description">부서·역할·업무 흐름 변경 내용을 확인한 뒤 설치하세요.</p>
+            <p className="section-description">부서·역할·Workflow 변경 내용을 확인한 뒤 설치하세요. 회사 운영 구조를 바꾸는 관리자 작업입니다.</p>
             {snapshot.industries.map(preview => (
               <div key={preview.industry} className="recommendation">
                 <div>{preview.industry} <span className="action">v{preview.bundle.version} · 부서 [{preview.bundle.departments.join(", ")}]</span></div>
