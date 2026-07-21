@@ -48,6 +48,37 @@ export interface CompanyMemberRecord {
   departmentId: string | null;
   kind: "human" | "agent";
 }
+export interface EmployeePromptProfileRecord {
+  systemAddendum: string;
+  taskInstructions: string[];
+  reportTemplate: string;
+  safetyConstraints: string[];
+}
+export interface EmployeeProfileRecord {
+  id: string;
+  companyId: string;
+  principalId: string;
+  name: string;
+  department: string;
+  roleTitle: string;
+  summary: string;
+  specialties: string[];
+  responsibilities: string[];
+  workStyle: string[];
+  deliverableFormat: string[];
+  successCriteria: string[];
+  allowedActions: string[];
+  approvalRequiredActions: string[];
+  forbiddenActions: string[];
+  toolHints: string[];
+  internalRoleMapping: CompanyPipelineRole[];
+  promptProfile: EmployeePromptProfileRecord;
+  status: "draft" | "active" | "archived";
+  version: number;
+  generatedFrom?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 export interface RoleTemplateRecord {
   id: string;
   logicalId: string;
@@ -565,6 +596,8 @@ CREATE TABLE IF NOT EXISTS goal_delivery_review_decisions_v23(id TEXT PRIMARY KE
 CREATE TABLE IF NOT EXISTS goal_delivery_build_evidence_v24(stage_instance_id TEXT PRIMARY KEY REFERENCES goal_delivery_stage_instances_v19(id) ON DELETE CASCADE,run_id TEXT NOT NULL REFERENCES runs(id),manifest_version INTEGER NOT NULL CHECK(manifest_version=1),manifest TEXT NOT NULL,snapshot_hash TEXT NOT NULL,ready INTEGER NOT NULL CHECK(ready IN (0,1)),created_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_goal_delivery_process_goal_v19 ON goal_delivery_processes_v19(company_id,goal_id,process_version DESC);
 CREATE INDEX IF NOT EXISTS idx_goal_delivery_stage_process_v19 ON goal_delivery_stage_instances_v19(process_id,stage,attempt);
+CREATE TABLE IF NOT EXISTS employee_profiles_v25(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies_v4(id) ON DELETE CASCADE,principal_id TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('draft','active','archived')),version INTEGER NOT NULL,profile TEXT NOT NULL,generated_from TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(company_id,principal_id,status));
+CREATE INDEX IF NOT EXISTS idx_employee_profiles_v25_company ON employee_profiles_v25(company_id,status,principal_id);
 CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_bindings_v15(company_id,target_type,target_id,pipeline_role);
 `);
     const companyColumns = this.db
@@ -859,6 +892,36 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
       kind,
     });
   }
+
+  setEmployeeProfile(companyId: string, actorId: string, profile: EmployeeProfileRecord): EmployeeProfileRecord {
+    this.require(companyId, actorId, "manage-org");
+    if (profile.companyId !== companyId) throw new Error("Cross-company employee profile blocked");
+    if (!profile.principalId.trim()) throw new Error("Employee principalId required");
+    const existing = this.employeeProfile(companyId, profile.principalId, profile.status);
+    const timestamp = now();
+    const next: EmployeeProfileRecord = {
+      ...profile,
+      id: profile.id || crypto.randomUUID(),
+      version: existing ? existing.version + 1 : Math.max(1, Number(profile.version) || 1),
+      createdAt: existing?.createdAt ?? profile.createdAt ?? timestamp,
+      updatedAt: timestamp,
+    };
+    this.db.prepare("INSERT OR REPLACE INTO employee_profiles_v25(id,company_id,principal_id,status,version,profile,generated_from,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)").run(next.id,companyId,next.principalId,next.status,next.version,json(next),next.generatedFrom ?? null,next.createdAt,next.updatedAt);
+    this.audit(companyId, "EMPLOYEE_PROFILE_SET", { actorId, principalId: next.principalId, status: next.status, version: next.version, generatedFrom: next.generatedFrom ?? null });
+    return next;
+  }
+  employeeProfile(companyId: string, principalId: string, status: "draft" | "active" | "archived" = "active"): EmployeeProfileRecord | null {
+    const row = this.db.prepare("SELECT profile FROM employee_profiles_v25 WHERE company_id=? AND principal_id=? AND status=?").get(companyId, principalId, status) as { profile: string } | undefined;
+    return row ? parse(row.profile) as EmployeeProfileRecord : null;
+  }
+  employeeProfiles(companyId: string, actorId: string, status: "draft" | "active" | "archived" | "all" = "active"): EmployeeProfileRecord[] {
+    this.require(companyId, actorId, "view");
+    const rows = status === "all"
+      ? this.db.prepare("SELECT profile FROM employee_profiles_v25 WHERE company_id=? ORDER BY updated_at DESC,principal_id").all(companyId)
+      : this.db.prepare("SELECT profile FROM employee_profiles_v25 WHERE company_id=? AND status=? ORDER BY updated_at DESC,principal_id").all(companyId, status);
+    return (rows as Array<{ profile: string }>).map(row => parse(row.profile) as EmployeeProfileRecord);
+  }
+
   members(companyId: string, actorId: string): CompanyMemberRecord[] {
     this.require(companyId, actorId, "view");
     return this.db

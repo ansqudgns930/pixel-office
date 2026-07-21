@@ -584,7 +584,7 @@ Acceptance criteria:
 
 ### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
 
-Status: **In Progress — UX-P3 draft endpoint/UI slice implemented; live endpoint requires server restart**
+Status: **In Progress — UX-P4 activation/persistence slice implemented; live endpoint smoke requires Node24/server restart**
 
 Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
 
@@ -629,3 +629,20 @@ Acceptance criteria:
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
 - Note: currently running Control Plane process was still pre-UX-P3 and returned 404 for the new endpoint until restart.
+
+
+### 2026-07-21 — UX-P4 employee activation persistence slice
+
+- Added persisted employee profile storage in company ops: `employee_profiles_v25`.
+- Added `setEmployeeProfile()`, `employeeProfile()`, and `employeeProfiles()` APIs in `packages/company-ops`.
+- Added Control Plane endpoints:
+  - `GET /api/companies/:companyId/employees/profiles`
+  - `POST /api/companies/:companyId/employees/activate`
+- Updated Employees page to fetch active saved profiles and prefer them over local templates.
+- Updated new-hire flow: generated draft preview now leads to `이 직원 채용하기`, which creates/updates the company member and persists the active employee profile.
+- Ran: `npm run typecheck`
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run build`
+- Ran: `npm run delegated-work:browser-qa` — PASS
+- Visual QA rendered required screens, but current running Control Plane was pre-UX-P4 and produced optional profile-endpoint 404 console errors.
+- Attempted isolated new Control Plane on port 4311; blocked by current shell Node v22 missing `node:sqlite` `backup` export. Live endpoint smoke should run after restarting the app with the configured Node24 runtime.
