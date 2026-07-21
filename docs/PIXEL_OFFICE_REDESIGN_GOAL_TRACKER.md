@@ -491,3 +491,30 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — UX-J Post-launch guidance slice
+
+- Implemented post-launch guidance after Company Home delegated-work launch.
+- Company Home launch navigation now appends `launched=1` to the GoalsPage URL.
+- GoalsPage captures `launched=1` into local UI state so the guidance remains visible even after URL params are normalized by data loading.
+- Added post-launch card on GoalsPage:
+  - `업무를 맡겼습니다`
+  - `AI 팀이 계획을 실행 중입니다. 지금은 진행 단계와 다음 액션만 확인하면 됩니다.`
+- Added quick links/CTAs:
+  - `진행 보기`
+  - `결정 필요`
+  - `픽셀 오피스 Live View`
+  - `결과·활동`
+- Added state badges:
+  - `진행 단계 확인`
+  - `결정 필요 시 멈춤`
+  - `결과·활동에서 브리핑`
+- Added `id="delivery-process"` target to the delivery process section for the `진행 보기` link.
+- Avoided duplicate launch-note display when the post-launch card is visible.
+- Extended delegated-work E2E to assert post-launch guidance copy and links.
+- Extended visual QA smoke with `post-launch-guidance` route.
+- Fixed a JSX conditional wrapper issue during implementation.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
