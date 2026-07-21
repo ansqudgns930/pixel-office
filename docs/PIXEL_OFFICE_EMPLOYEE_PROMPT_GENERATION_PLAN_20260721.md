@@ -611,6 +611,8 @@ Acceptance criteria:
 
 ## UX-P7 — browser QA + visual QA 확장
 
+Status: **In Progress — API workflow QA added; browser/visual QA waits for live runtime env**
+
 Scope:
 
 - 직원 추가 flow browser QA

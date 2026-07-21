@@ -676,3 +676,12 @@ Acceptance criteria:
 - Ran: `npm --prefix apps/web run build` — PASS
 - Ran: `node --test dist/tests/goal-launch-api.test.js` — PASS
 - Note: `npm test -- tests/goal-launch-api.test.ts` is not a valid targeted TypeScript test invocation in this repo; it also runs existing dist tests and still hits the known Node22 `node:sqlite backup` issue.
+
+### 2026-07-21 — UX-P7 employee workflow API QA slice
+
+- Added `tests/employee-workflow-api.test.ts` to cover the employee workflow without browser/runtime env dependencies.
+- The test verifies: employee draft endpoint, employee activation/persistence, active profile listing, custom employee staffing recommendation, and delegated-work goal launch provenance snapshot.
+- This is the first UX-P7 QA layer; full browser/visual QA still requires `QA_TOKEN`, `BROWSER_AUTOMATION_EXECUTABLE`, and a restarted Node24 Control Plane/Web stack.
+- Ran: `npm run typecheck` — PASS
+- Ran: `npm run build` — PASS
+- Ran: `node --test dist/tests/employee-workflow-api.test.js` — PASS
