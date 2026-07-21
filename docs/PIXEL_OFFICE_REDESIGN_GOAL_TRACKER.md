@@ -584,7 +584,7 @@ Acceptance criteria:
 
 ### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
 
-Status: **In Progress — UX-P4 activation/persistence slice implemented; live endpoint smoke requires Node24/server restart**
+Status: **In Progress — UX-P5 custom employee staffing slice implemented; live full smoke requires Node24/server restart**
 
 Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
 
@@ -646,3 +646,17 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa` — PASS
 - Visual QA rendered required screens, but current running Control Plane was pre-UX-P4 and produced optional profile-endpoint 404 console errors.
 - Attempted isolated new Control Plane on port 4311; blocked by current shell Node v22 missing `node:sqlite` `backup` export. Live endpoint smoke should run after restarting the app with the configured Node24 runtime.
+
+
+### 2026-07-21 — UX-P5 custom employee staffing slice
+
+- Extended `packages/staffing-rules` with custom employee candidate inputs and `recommendedEmployees` output.
+- Staffing now scores saved employee profiles against the rough work request and recommends matching custom employees such as `SNS Marketer` for Instagram/marketing requests.
+- Updated Control Plane `POST /api/companies/:companyId/staffing/plan` to include active saved employee profiles from `employee_profiles_v25`.
+- Updated Company Home AI plan preview to show when a hired custom employee is being used, including employee id, role title, reason, and approval-required risk notes.
+- Ran: `npm run typecheck`
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run build`
+- Ran: staffing rule unit smoke against `dist/packages/staffing-rules/src/index.js`
+- Ran: `npm run delegated-work:browser-qa` — PASS
+- Note: current live Control Plane remains pre-UX-P4/P5, so full browser smoke for saved custom employee → staffing preview should run after restarting with Node24 runtime.

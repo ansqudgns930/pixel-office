@@ -17,8 +17,17 @@ interface GoalDraftResponse {
   warnings: string[];
 }
 
+interface StaffingEmployeeCandidate {
+  employeeId: string;
+  name: string;
+  roleTitle: string;
+  reason: string;
+  riskNotes: string[];
+}
+
 interface StaffingPlanResponse {
   staff: string[];
+  recommendedEmployees?: StaffingEmployeeCandidate[];
   steps: string[];
   risk: "low" | "medium" | "high" | "critical";
   decisionExpectation: string;
@@ -249,8 +258,12 @@ export default function CompanyPage() {
               <section className="card" aria-label="왜 이 팀인가요">
                 <h3>왜 이 팀인가요?</h3>
                 <ul>
-                  {planPreview.staff.map(member => <li key={member}><strong>{member}</strong> · {staffReason(member)}</li>)}
+                  {planPreview.staff.map(member => {
+                    const custom = planPreview.recommendedEmployees?.find(employee => employee.name === member);
+                    return <li key={member}><strong>{member}</strong> · {custom?.reason ?? staffReason(member)}{custom&&<small className="field-help"> · 직원 ID {custom.employeeId}</small>}</li>;
+                  })}
                 </ul>
+                {!!planPreview.recommendedEmployees?.length&&<div className="custom-staffing-callout"><strong>채용한 직원이 투입됩니다</strong>{planPreview.recommendedEmployees.map(employee=><p key={employee.employeeId}><span>{employee.name}</span> · {employee.roleTitle}<br/><small>결정 필요: {employee.riskNotes.join(" · ")||"업무 중 위험 신호 발생 시"}</small></p>)}</div>}
               </section>
               <section className="card" aria-label="실행하면 이렇게 진행됩니다">
                 <h3>실행하면 이렇게 진행됩니다</h3>

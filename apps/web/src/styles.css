@@ -478,3 +478,5 @@ button.confirm-accent { background:var(--accent); border-color:var(--accent); co
 @media(max-width:720px){.employee-profile-hero{grid-template-columns:1fr}.employee-profile-grid{grid-template-columns:1fr}.sample-request-grid{grid-template-columns:1fr}}
 
 .employee-hiring-intro textarea{width:100%;min-height:110px;resize:vertical;margin:0}.employee-draft-preview{display:grid;gap:10px;margin-top:8px;padding:10px;border:1px solid var(--border-subtle);border-radius:var(--radius);background:rgba(56,139,253,.06)}
+
+.custom-staffing-callout{display:grid;gap:6px;margin-top:10px;padding:10px;border:1px solid rgba(117,215,139,.35);border-radius:var(--radius);background:rgba(117,215,139,.07)}.custom-staffing-callout p{margin:0;color:var(--text-secondary)}.custom-staffing-callout span{color:var(--text);font-weight:700}
