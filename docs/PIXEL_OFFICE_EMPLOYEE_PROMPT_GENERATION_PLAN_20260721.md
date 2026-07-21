@@ -820,3 +820,12 @@ Evidence:
 - `node scripts/pixel-office-redesign-visualqa.cjs` passed across desktop/mobile route checks with no missing required copy and no overflow.
 
 Remaining release follow-up: decide whether to tag the Pixel Office redesign release.
+
+
+## UX-P8 prompt-injection regression
+
+Status: **Implemented — model-provided unsafe action/prompt overrides are filtered during employee draft normalization.**
+
+Evidence:
+- Added regression test with malicious model JSON attempting to allow posting without approval, token/password access, ad-budget spend, and security-policy override.
+- Normalization now strips unsafe values from allowed actions and prompt instructions while preserving mandatory approval/forbidden/safety constraints.

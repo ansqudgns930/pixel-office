@@ -706,3 +706,12 @@ Acceptance criteria:
 - Ran `npm run delegated-work:browser-qa` successfully against live API/Web stack; errors: `[]`.
 - Ran `node scripts/pixel-office-redesign-visualqa.cjs` with QA env successfully; all required route checks had `missing: []`, `overflow: false`, `errors: []`.
 - Fixed the employee workflow QA selector to avoid Playwright strict-mode collision between the draft toast and `Prompt profile preview` heading.
+
+
+### 2026-07-22 — UX-P8 employee draft prompt-injection regression
+
+- Added normalization hardening in `packages/employee-drafting/src/index.ts` so model-provided employee drafts cannot keep unsafe allowed actions or prompt override instructions.
+- Unsafe model output such as direct posting without approval, token/password requests, ad-budget spend, approval bypass, or security override is stripped from `allowedActions`, `promptProfile.systemAddendum`, and `promptProfile.taskInstructions`.
+- Added `tests/employee-drafting-security.test.ts` covering malicious model JSON that attempts to bypass approval/security rules.
+- Validation passed: `npm run typecheck`, `npm run build`, `node --test dist/tests/employee-drafting-security.test.js dist/tests/employee-workflow-api.test.js`, tracked secret scan `[]`.
+- This is post-release hardening after `v0.1.0-pixel-office-redesign`; the release tag remains on the validated release closeout commit.
