@@ -208,6 +208,39 @@ export interface CompanyRecord {
 
 export interface DepartmentRecord { id: string; companyId: string; parentId: string | null; name: string; budgetLimit: number }
 
+export interface EmployeePromptProfile {
+  systemAddendum: string;
+  taskInstructions: string[];
+  reportTemplate: string;
+  safetyConstraints: string[];
+}
+
+export interface EmployeeProfile {
+  id: string;
+  companyId: string;
+  principalId: string;
+  name: string;
+  department: string;
+  roleTitle: string;
+  summary: string;
+  specialties: string[];
+  responsibilities: string[];
+  workStyle: string[];
+  deliverableFormat: string[];
+  successCriteria: string[];
+  allowedActions: string[];
+  approvalRequiredActions: string[];
+  forbiddenActions: string[];
+  toolHints: string[];
+  internalRoleMapping: Array<"planner" | "worker" | "reviewer">;
+  promptProfile: EmployeePromptProfile;
+  status: "draft" | "active" | "archived";
+  version: number;
+  generatedFrom?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PortfolioTotals {
   projects: number; tasks: number; done: number; spent: number; budget: number;
   blocked: number; stale: number; conflicts: number; approvals: number;

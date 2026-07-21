@@ -584,7 +584,7 @@ Acceptance criteria:
 
 ### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
 
-Status: **Proposed — planning doc created**
+Status: **In Progress — UX-P1/P2 first slice implemented**
 
 Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
 
@@ -598,3 +598,16 @@ Acceptance criteria:
 - 사용자가 raw system prompt를 직접 쓰지 않아도 직원을 만들 수 있다.
 - 외부 게시, 광고비, DM, 개인정보 등 위험 행동은 기본적으로 승인 필요 또는 금지로 보강된다.
 - employee profile은 기존 role prompt/security layer보다 높은 권한을 갖지 않는다.
+
+
+### 2026-07-21 — UX-P1/P2 first slice
+
+- Added web `EmployeeProfile` / `EmployeePromptProfile` types.
+- Added `apps/web/src/employeeProfiles.ts` with core-team and example custom employee profile templates.
+- Extended `직원·AI팀` with a `직무기술서` tab showing responsibilities, work style, deliverable format, success criteria, allowed actions, approval-required actions, forbidden actions, internal role mapping, and prompt profile preview.
+- Reframed `새 직원 추가` as future natural-language employee draft generation with sample employee requests.
+- Extended visual QA with an employee profile screen check.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

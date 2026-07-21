@@ -29,6 +29,7 @@ async function main() {
   const checks = [
     { name: 'company-home', url: `/company?companyId=${companyId}`, required: ['업무 흐름', '운영·관리', '고급', '처음이라면 작은 업무 하나를 AI 회사에 맡겨보세요', '무슨 일을 AI 회사에 맡길까요?', 'AI 팀에게 계획 요청', '결정 필요'] },
     { name: 'staff-team', url: `/employees?companyId=${companyId}`, required: ['직원·AI팀', '고정 핵심팀', 'CEO', 'PM', 'Designer', 'Developer', 'QA', '외부 전문가 대기실'] },
+    { name: 'employee-profile', url: `/employees?companyId=${companyId}&agentId=demo-designer`, required: ['직무기술서', '맡길 수 있는 일', '일하는 방식', '결정 필요', 'Prompt profile preview'] },
     { name: 'delegated-work-goals', url: `/goals?companyId=${companyId}`, required: ['맡긴 일', '업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', '업무 목록', '진행 단계', '다음 액션', '완료 리포트 준비 중', '검증 상태', '다음 업무 맡기기'] },
     { name: 'post-launch-guidance', url: `/goals?companyId=${companyId}&goalId=demo-company-goal&launched=1`, required: ['업무를 맡겼습니다', 'AI 팀이 계획을 실행 중입니다', '진행 보기', '결정 필요', '픽셀 오피스 Live View', '결과·활동'] },
     { name: 'decision-inbox', url: `/reviews?companyId=${companyId}`, required: ['결정 필요', '지금 결정 필요', '운영 원칙'] },
@@ -47,6 +48,10 @@ async function main() {
     await page.goto(webBase + item.url, { waitUntil: 'domcontentloaded' });
     await page.locator('body').waitFor();
     await page.waitForTimeout(800);
+    if (item.name === 'employee-profile') {
+      await page.getByRole('button', { name: '직무기술서' }).click();
+      await page.waitForTimeout(300);
+    }
     const text = await page.locator('body').innerText();
     const lowerText = text.toLowerCase();
     const missing = item.required.filter(term => !lowerText.includes(term.toLowerCase()));
