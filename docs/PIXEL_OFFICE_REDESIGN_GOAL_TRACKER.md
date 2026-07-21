@@ -354,3 +354,18 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — MeetingsPage delegated-work review slice
+
+- Reframed `MeetingsPage` from generic `회의` to `업무 검토 회의`.
+- Updated page description to emphasize delegated-work progress review, decisions, risks, and follow-up Task confirmation.
+- Added goal-focus context when `goalId` is present: `선택한 맡긴 일의 검토 회의를 보는 중입니다`.
+- Added meeting focus badges: `진행 검토`, `결정 정리`, `위험·이견`, `후속 Task`.
+- Updated toolbar links to delegated-work flow: `회사 홈`, `맡긴 일 상세`, `결정 필요`, `결과·활동`.
+- Reworded list/create/empty/detail copy from meeting-log language to work-review language.
+- Fixed URL-state continuity: meeting load now preserves goal focus through `goalId` when available.
+- Extended visual QA smoke with `work-review-meetings` route.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
