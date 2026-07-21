@@ -737,3 +737,10 @@ Acceptance criteria:
 - Added dark-shell overrides for `OwnerReviewsPage` review queues/details, packet sections, sticky decision panel, and resolved history note.
 - Added dark-shell overrides for `ActivityPage` filters, feeds, search results, safety/impact panels, and deletion/risk states.
 - This follows the same visual priority discovered in the browser review: post-launch trust screens should not abruptly switch to white admin cards inside the dark product shell.
+
+
+### 2026-07-22 — UX-Q4 company list QA hygiene
+
+- Strengthened generated test-company filtering after direct UI review showed large QA/probe company noise in `/companies` and company selectors.
+- Added detection for `employee-workflow-qa`, `employee-api-probe`, `ui-ux-review-company`, browser/visual QA, generic QA, and probe company names/ids.
+- Added `tests/company-options.test.ts` to keep real companies visible, hide generated QA/probe companies, and keep the currently selected QA company visible when reviewing it directly.
