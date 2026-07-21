@@ -547,3 +547,20 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### 2026-07-21 — UX-M Direct browser UX review fixes, priority 1-3
+
+- Fixed the high-priority GoalsPage title wrapping issue found during direct browser UX review; long Korean delegated-work titles no longer wrap one character per line in the detail header.
+- Cleaned Company Home plan preview internal/debug copy:
+  - `fallback draft` is now shown as `기본 계획 모드`.
+  - `goal-draft-model-not-configured` is translated to user-facing guidance about default planning mode before AI engine setup.
+- Swept stale meeting labels in the reviewed flow:
+  - Company Home quick link `회의` → `업무 검토 회의`.
+  - GoalsPage toolbar `목표 회의` → `업무 검토 회의`.
+- Extended delegated-work browser QA to assert the new user-facing fallback copy and reject internal copy leakage.
+- Re-checked directly in browser without direct API calls: Company Home preview and GoalsPage detail title layout.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS

@@ -50,6 +50,12 @@ const TEAM_REASON: Record<string,string> = {
 };
 function staffReason(name:string){return TEAM_REASON[name] ?? "요청한 업무의 일부를 처리하기 위해 임시로 투입됩니다.";}
 function riskLabel(level: StaffingPlanResponse["risk"]){return level==="critical"?"매우 높음":level==="high"?"높음":level==="medium"?"보통":"낮음";}
+function draftModeLabel(status: GoalDraftResponse["status"]){return status==="fallback"?"기본 계획 모드":"AI 계획 모드";}
+function draftWarningLabel(warning:string){
+  if(warning==="goal-draft-model-not-configured")return "AI 엔진 설정 전이라 기본 계획으로 preview를 생성했습니다.";
+  if(warning==="goal-draft-model-error")return "AI 계획 생성이 지연되어 기본 계획으로 preview를 생성했습니다.";
+  return warning.replace(/[-_]/g," ");
+}
 
 function companyActionErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
@@ -174,7 +180,7 @@ export default function CompanyPage() {
           <button disabled={busy || !companyId} onClick={() => void load()}>현황 새로고침</button>
           <Link className="button-link" to="/companies">회사 목록</Link>
           {companyId && <Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일</Link>}
-          {companyId && <Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의</Link>}
+          {companyId && <Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>업무 검토 회의</Link>}
           {companyId && <Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀 오피스</Link>}
         </div>
         {error && <p className="error">{error}</p>}
@@ -228,7 +234,7 @@ export default function CompanyPage() {
             <div className="badge-row">
               {planPreview.staff.map(member => <span key={member} className="badge">{member}</span>)}
               <span className="badge">위험도 {planPreview.risk}</span>
-              {planPreview.draft.status === "fallback" && <span className="badge">fallback draft</span>}
+              <span className="badge">{draftModeLabel(planPreview.draft.status)}</span>
             </div>
             <ol>
               {planPreview.steps.map(step => <li key={step}>{step}</li>)}
@@ -277,7 +283,7 @@ export default function CompanyPage() {
               <h3>예상 결과물</h3>
               <p>완료 후에는 맡긴 일 진행 기록, 실행 Task, 검증 근거, 결정 이력, 결과 브리핑을 확인할 수 있습니다.</p>
             </section>
-            {planPreview.draft.warnings.length > 0 && <p className="error">{planPreview.draft.warnings.join(", ")}</p>}
+            {planPreview.draft.warnings.length > 0 && <p className="field-help">{planPreview.draft.warnings.map(draftWarningLabel).join(" ")}</p>}
             <div className="row" style={{ marginTop: 8 }}>
               <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>이 계획으로 AI 회사에 맡기기</button>
               <button className="secondary" onClick={() => setPlanPreview(null)}>계획 수정</button>
@@ -307,7 +313,7 @@ export default function CompanyPage() {
             <div className={`stat-tile${health?.metrics.validationFailures?" danger":""}`}><div className="label">검증 실패</div><div className="value">{health?.metrics.validationFailures??0}</div></div>
             <div className={`stat-tile${health?.metrics.incidents?" danger":""}`}><div className="label">Incident</div><div className="value">{health?.metrics.incidents??0}</div></div>
           </div>
-          <section className="company-next-actions" aria-label="회사 주요 행동"><Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀오피스로 보기</Link><Link className="button-link" to={`/employees?companyId=${encodeURIComponent(companyId)}`}>직원·AI팀</Link><Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일 전체 현황</Link><Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>회의 참여</Link><Link className="button-link" to={`/projects?companyId=${encodeURIComponent(companyId)}`}>프로젝트 보기</Link><Link className="button-link" to={`/execution?companyId=${encodeURIComponent(companyId)}`}>고급 실행 확인</Link>{snapshot.meetingSessions?.some(x=>x.status==="live")&&<span className="badge"><span className="status-dot status-good"/>진행 중 회의 {snapshot.meetingSessions.filter(x=>x.status==="live").length}건</span>}{totals.approvals>0&&<span className="badge"><span className="status-dot status-warning"/>결정 필요 {totals.approvals}건</span>}{totals.blocked>0&&<span className="badge"><span className="status-dot status-critical"/>차단 {totals.blocked}건</span>}</section>
+          <section className="company-next-actions" aria-label="회사 주요 행동"><Link className="button-link" to={`/pixel-office?companyId=${encodeURIComponent(companyId)}`}>픽셀오피스로 보기</Link><Link className="button-link" to={`/employees?companyId=${encodeURIComponent(companyId)}`}>직원·AI팀</Link><Link className="button-link" to={`/goals?companyId=${encodeURIComponent(companyId)}`}>맡긴 일 전체 현황</Link><Link className="button-link" to={`/meetings?companyId=${encodeURIComponent(companyId)}`}>업무 검토 회의</Link><Link className="button-link" to={`/projects?companyId=${encodeURIComponent(companyId)}`}>프로젝트 보기</Link><Link className="button-link" to={`/execution?companyId=${encodeURIComponent(companyId)}`}>고급 실행 확인</Link>{snapshot.meetingSessions?.some(x=>x.status==="live")&&<span className="badge"><span className="status-dot status-good"/>진행 중 회의 {snapshot.meetingSessions.filter(x=>x.status==="live").length}건</span>}{totals.approvals>0&&<span className="badge"><span className="status-dot status-warning"/>결정 필요 {totals.approvals}건</span>}{totals.blocked>0&&<span className="badge"><span className="status-dot status-critical"/>차단 {totals.blocked}건</span>}</section>
           <nav className="section-tabs" aria-label="회사 상세 영역">
             <button className={activeTab === "overview" ? "active" : ""} aria-pressed={activeTab === "overview"} onClick={() => setActiveTab("overview")}>현황</button>
             <button className={activeTab === "organization" ? "active" : ""} aria-pressed={activeTab === "organization"} onClick={() => setActiveTab("organization")}>조직·Agent</button>
