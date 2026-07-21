@@ -729,3 +729,11 @@ Acceptance criteria:
   - Launch button now changes to `AI 회사에 맡기는 중…`.
   - Added a visible progress status banner for planning/launch actions so the UI no longer looks stalled while work is being delegated.
 - Validation: `npm run typecheck` and `npm --prefix apps/web run build` passed before commit.
+
+
+### 2026-07-22 — UX-Q3 dark panel consistency
+
+- Continued the direct-UI review fix list by removing the most visible white-panel mismatch from decision and activity surfaces.
+- Added dark-shell overrides for `OwnerReviewsPage` review queues/details, packet sections, sticky decision panel, and resolved history note.
+- Added dark-shell overrides for `ActivityPage` filters, feeds, search results, safety/impact panels, and deletion/risk states.
+- This follows the same visual priority discovered in the browser review: post-launch trust screens should not abruptly switch to white admin cards inside the dark product shell.
