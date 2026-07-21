@@ -584,7 +584,7 @@ Acceptance criteria:
 
 ### UX-P — 직원 프롬프트 자동생성 / AI 직원 채용
 
-Status: **In Progress — UX-P1/P2 first slice implemented**
+Status: **In Progress — UX-P3 draft endpoint/UI slice implemented; live endpoint requires server restart**
 
 Plan: `docs/PIXEL_OFFICE_EMPLOYEE_PROMPT_GENERATION_PLAN_20260721.md`
 
@@ -611,3 +611,21 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### 2026-07-21 — UX-P3 employee draft generation slice
+
+- Added `packages/employee-drafting/src/index.ts` with `draftEmployeeProfile()`, JSON output contract, safety defaults, model path, and deterministic fallback.
+- Added Control Plane action and endpoint: `POST /api/companies/:companyId/employees/draft`.
+- Wired local control plane to use configured backend when available, otherwise fallback draft mode.
+- Added web `EmployeeDraftResponse` types.
+- Extended `직원·AI팀` new-hire flow with natural-language request textarea, sample request buttons, `직원 초안 만들기` CTA, and draft preview.
+- Safety behavior: external posting, DM/comment sending, ad spend/payment, account/token access, and personal data use are forced into approval-required/forbidden fields.
+- Ran: `npm run typecheck`
+- Ran: `npm run build`
+- Ran: fallback contract smoke against `dist/packages/employee-drafting/src/index.js`
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
+- Note: currently running Control Plane process was still pre-UX-P3 and returned 404 for the new endpoint until restart.

@@ -51,6 +51,7 @@ import { MeetingSemanticSummaryService } from "../../packages/meeting-semantics/
 import { AgentReportInterpreter } from "../../packages/agent-reporting/src/index.js";
 import { ReportingProjector } from "../../packages/reporting/src/index.js";
 import { draftGoal } from "../../packages/goal-drafting/src/index.js";
+import { draftEmployeeProfile } from "../../packages/employee-drafting/src/index.js";
 import {
   FirebaseHostingAdapter,
   type FirebaseCommandResult,
@@ -1046,6 +1047,19 @@ export async function startLocalControlPlane(
       },
       async draftGoal(rough) {
         return draftGoal(
+          rough,
+          backend.host === "standalone"
+            ? undefined
+            : {
+                host,
+                backend: backend.host,
+                model: backend.model,
+                deadline: Date.now() + 60_000,
+              },
+        );
+      },
+      async draftEmployeeProfile(rough) {
+        return draftEmployeeProfile(
           rough,
           backend.host === "standalone"
             ? undefined

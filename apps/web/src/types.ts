@@ -215,6 +215,32 @@ export interface EmployeePromptProfile {
   safetyConstraints: string[];
 }
 
+export interface EmployeeDraftProfile {
+  name: string;
+  department: string;
+  roleTitle: string;
+  summary: string;
+  specialties: string[];
+  responsibilities: string[];
+  workStyle: string[];
+  deliverableFormat: string[];
+  successCriteria: string[];
+  allowedActions: string[];
+  approvalRequiredActions: string[];
+  forbiddenActions: string[];
+  toolHints: string[];
+  internalRoleMapping: Array<"planner" | "worker" | "reviewer">;
+  promptProfile: EmployeePromptProfile;
+}
+
+export interface EmployeeDraftResponse {
+  profile: EmployeeDraftProfile;
+  status: "model" | "fallback";
+  promptHash: string | null;
+  warnings: string[];
+  needsHumanReview: boolean;
+}
+
 export interface EmployeeProfile {
   id: string;
   companyId: string;
