@@ -531,3 +531,19 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+
+### 2026-07-21 — UX-L Navigation simplification slice
+
+- Reorganized sidebar navigation around delegated-work user intent instead of a flat admin console menu.
+- Added grouped navigation sections:
+  - `업무 흐름`: 내 회사, 회사 홈, 맡긴 일, 결정 필요, 결과·활동, 픽셀 오피스.
+  - `운영·관리`: 직원·AI팀, 실행 작업실, 업무 검토 회의.
+  - `고급`: AI 엔진 설정, 고급 실행, 운영 건강도, 플랫폼 관리.
+- Updated stale nav labels including `회의` → `업무 검토 회의`, `운영 상태` → `운영 건강도`, `플랫폼` → `플랫폼 관리`.
+- Added sidebar group descriptions to explain whether each area is normal user flow, management, or advanced/admin.
+- Extended visual QA to assert the nav groups on desktop and mobile Company Home.
+- Ran: `npm --prefix apps/web run build`
+- Ran: `npm run delegated-work:browser-qa`
+- Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
+- Result: PASS
