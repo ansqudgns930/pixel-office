@@ -623,6 +623,7 @@ Scope:
 Acceptance criteria:
 
 - 새 직원 생성, 채용, 업무 투입까지 한 번에 검증된다.
+- Browser harness: `npm run employee-workflow:browser-qa`
 - screenshot-backed visual QA에서 overflow/missing copy가 없다.
 
 ---

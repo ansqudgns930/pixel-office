@@ -685,3 +685,12 @@ Acceptance criteria:
 - Ran: `npm run typecheck` — PASS
 - Ran: `npm run build` — PASS
 - Ran: `node --test dist/tests/employee-workflow-api.test.js` — PASS
+
+
+### 2026-07-21 — UX-P7 employee workflow browser QA harness
+
+- Added `scripts/verify-employee-workflow.cjs` and npm script `employee-workflow:browser-qa`.
+- The browser QA scenario covers employee draft UI, activation, Company Home custom employee staffing preview, delegated-work launch, and GoalsPage employee profile provenance rendering.
+- The script writes screenshots/report to `.runtime/visualqa/employee-workflow/`.
+- Environment guard verified: it fails fast with `QA_TOKEN and BROWSER_AUTOMATION_EXECUTABLE are required` when live QA credentials/browser are not configured.
+- Full execution remains blocked until the Node24 Control Plane/Web stack is restarted and QA env values are present.
