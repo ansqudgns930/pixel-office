@@ -447,3 +447,25 @@ Acceptance criteria:
 - Ran: `npm run delegated-work:browser-qa`
 - Ran: `node scripts/pixel-office-redesign-visualqa.cjs`
 - Result: PASS
+
+### 2026-07-21 — UX flow review using app-flow/onboarding/psychology references
+
+- Created `docs/PIXEL_OFFICE_UX_FLOW_REVIEW_20260721.md`.
+- Re-reviewed current Pixel Office flow using three lenses requested by the user:
+  - Lazyweb/PageFlows-style step-by-step app flow comparison.
+  - Gummble/Bumble-style onboarding → value reveal → paywall/commit gate patterns.
+  - Growth.Design-style user psychology: cognitive load, trust formation, loss aversion, reward loop.
+- Main conclusion: delegated-work route/copy redesign is directionally correct, but the first 3 minutes still need stronger emotional/psychological design.
+- Key findings:
+  - Current flow maps well to promise → input → preview → commit → progress → result, but transition copy is weak.
+  - `이 계획으로 실행` should be treated like a paywall/commit gate because it consumes user trust, time, budget, and authority.
+  - Company Home should surface why the team was chosen, what happens next, where the system stops for approval, and what result the user will receive.
+  - Nav is still cognitively heavy for first-time users and should separate normal flow from operations/admin/advanced areas.
+  - Completion reward loop is weak; users need a clear completed-work summary and next-work CTA.
+- Recommended next implementation priorities:
+  - UX-H: First-run onboarding and sample delegation.
+  - UX-I: Plan preview commit gate strengthening.
+  - UX-J: Post-launch guidance.
+  - UX-K: Completion reward loop.
+  - UX-L: Navigation simplification.
+- Recommended immediate next goal: Company Home first-run onboarding + plan preview commit gate strengthening.
