@@ -57,7 +57,7 @@ async function main() {
     await page.getByText('+ 새 직원 추가 / 직원 초안 만들기').click();
     await page.getByLabel('새 직원 자연어 설명').fill('인스타그램 홍보 담당자를 채용하고 싶어. 릴스 아이디어와 캡션 초안을 만들고 실제 게시와 광고비 집행은 승인받아야 해.');
     await page.getByRole('button', { name: '직원 초안 만들기' }).click();
-    await page.getByText('직원 초안이 준비되었습니다').or(page.getByText('Prompt profile preview')).waitFor({ timeout: 45000 });
+    await page.getByRole('heading', { name: 'Prompt profile preview' }).waitFor({ timeout: 45000 });
     await page.screenshot({ path: path.join(outDir, '01-employee-draft.png'), fullPage: true });
     const draftText = await page.locator('body').innerText();
     for (const required of ['직무기술서', '결정 필요', '금지', 'Prompt profile preview']) {
@@ -66,7 +66,7 @@ async function main() {
     const principalId = `sns-marketer-${Date.now()}`;
     await page.getByLabel('ID (필수)').fill(principalId);
     await page.getByRole('button', { name: '이 직원 채용하기' }).click();
-    await page.getByText('직원을 채용했습니다').or(page.getByText(principalId)).waitFor({ timeout: 45000 });
+    await page.getByText(principalId).waitFor({ timeout: 45000 });
     await page.screenshot({ path: path.join(outDir, '02-employee-activated.png'), fullPage: true });
 
     await page.goto(`${webBase}/company?companyId=${encodeURIComponent(companyId)}`, { waitUntil: 'domcontentloaded' });

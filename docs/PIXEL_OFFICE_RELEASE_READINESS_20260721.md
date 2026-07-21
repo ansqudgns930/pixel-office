@@ -2,7 +2,7 @@
 
 ## Status
 
-The delegated-work Pixel Office redesign is implemented, validated, and pushed to GitHub main.
+The delegated-work Pixel Office redesign is implemented and validated. UX-P7 live QA closeout is committed locally and awaiting GitHub authentication for push.
 
 Latest workstream highlights:
 
@@ -46,6 +46,6 @@ Locked runtime files were left in place but are ignored:
 
 ## Remaining release checklist
 
-- Run a final manual browser smoke before tagging.
+- Push local UX-P7 closeout commit to GitHub main once authentication is available.
 - Confirm whether to create a release tag such as `v0.1.0-pixel-office-redesign`.
 - Rotate any previously exposed local/provider credentials outside this repo.

@@ -694,3 +694,15 @@ Acceptance criteria:
 - The script writes screenshots/report to `.runtime/visualqa/employee-workflow/`.
 - Environment guard verified: it fails fast with `QA_TOKEN and BROWSER_AUTOMATION_EXECUTABLE are required` when live QA credentials/browser are not configured.
 - Full execution remains blocked until the Node24 Control Plane/Web stack is restarted and QA env values are present.
+
+
+### 2026-07-21 — UX-P7 live browser QA closed
+
+- Restarted the live Control Plane on Node24 after confirming the old 4310 process returned 404 for employee draft/profile endpoints.
+- Verified employee endpoints after restart: draft endpoint returned fallback SNS Marketer and profiles endpoint returned an empty active list for a fresh QA company.
+- Ran `npm run employee-workflow:browser-qa` successfully against live API/Web stack.
+  - Covered employee draft UI, hire/activation, custom employee staffing preview, delegated-work launch, and GoalsPage employee profile provenance.
+  - Output: `.runtime/visualqa/employee-workflow/report.json`; errors: `[]`.
+- Ran `npm run delegated-work:browser-qa` successfully against live API/Web stack; errors: `[]`.
+- Ran `node scripts/pixel-office-redesign-visualqa.cjs` with QA env successfully; all required route checks had `missing: []`, `overflow: false`, `errors: []`.
+- Fixed the employee workflow QA selector to avoid Playwright strict-mode collision between the draft toast and `Prompt profile preview` heading.

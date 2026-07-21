@@ -808,3 +808,15 @@ node scripts/pixel-office-redesign-visualqa.cjs
 ## 14. 한 줄 제품 정의
 
 > Pixel Office는 사용자가 프롬프트를 직접 관리하는 도구가 아니라, 자연어로 AI 직원을 채용하고 직무·권한·보고 방식을 정한 뒤, 그 직원들이 실제 업무에 자동 투입되는 AI 회사 운영 UI가 되어야 한다.
+
+
+## UX-P7 live QA result
+
+Status: **Passed — live browser QA and visual QA completed on Node24 Control Plane/Web stack.**
+
+Evidence:
+- `npm run employee-workflow:browser-qa` passed with employee profile provenance snapshot visible after goal launch.
+- `npm run delegated-work:browser-qa` passed with no browser errors.
+- `node scripts/pixel-office-redesign-visualqa.cjs` passed across desktop/mobile route checks with no missing required copy and no overflow.
+
+Remaining release follow-up: decide whether to tag the Pixel Office redesign release.
