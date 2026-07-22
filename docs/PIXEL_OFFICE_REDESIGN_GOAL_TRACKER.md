@@ -864,3 +864,11 @@ Acceptance criteria:
 - The QA script still accepts `AGENT_COMPANY_MODEL_ROUTING_QA_COMPANY` for isolated override runs, but normal repeated QA no longer creates a new company every execution.
 - Added regression coverage to prevent the model routing browser QA default from reverting to timestamped generated companies.
 - Browser QA confirmed the stable company path still covers Company Home recommendation preview, Backend Settings preset consistency, launch-time settings provenance, and Goals model routing provenance.
+
+### 2026-07-23 - UX-R12 generated QA company cleanup tooling
+
+- Added a safe cleanup utility for generated QA companies: `npm run qa-companies:cleanup`.
+- Default behavior is dry-run only. It lists generated QA company candidates, their deletion/archive impact, and blockers without changing data.
+- `--archive` is required to archive unblocked generated QA companies; the stable model routing QA company `model-routing-qa-workflow` is protected by default unless `--include-stable` is passed.
+- Candidate families include model routing QA, employee workflow QA, delegated work flow QA, employee API probe, and UI/UX review generated companies.
+- Live dry-run observed 61 companies scanned, 51 generated QA candidates, 41 blocked by active run/approval/summary blockers, and 10 unblocked dry-run candidates.
