@@ -779,3 +779,12 @@ Acceptance criteria:
 - The QA verifies that unsafe override text does not leak into the employee draft preview or persisted active profile.
 - The QA verifies that approval-required and forbidden-action framing remains visible through the UI flow.
 - Updated the existing employee workflow browser QA selector to match the strengthened Q7 hiring summary label.
+
+
+### 2026-07-22 — UX-R1 model routing advisor MVP
+
+- Added `packages/model-routing` with role-level model tier recommendations for planner, worker, and reviewer.
+- Signals include strategy/planning, coding, security, external action, data/privacy, copy, UI/UX, and low complexity.
+- Attached model routing recommendations to the existing staffing plan API response.
+- Displayed recommended model placement in Company Home plan preview with role, tier, priority, reason, and AI engine settings CTA.
+- Added unit coverage for strategy, security/external action, coding, and simple copy routing.

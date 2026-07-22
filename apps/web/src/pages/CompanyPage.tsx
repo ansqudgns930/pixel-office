@@ -17,6 +17,20 @@ interface GoalDraftResponse {
   warnings: string[];
 }
 
+interface ModelRoutingRecommendation {
+  role: "planner" | "worker" | "reviewer";
+  priority: "critical" | "high" | "normal" | "low";
+  recommendedTier: "high-reasoning" | "high-verification" | "coding" | "fast-general" | "cheap-draft" | "fallback";
+  reason: string;
+}
+
+interface ModelRoutingPlan {
+  overallRisk: "low" | "medium" | "high" | "critical";
+  signals: string[];
+  recommendations: ModelRoutingRecommendation[];
+  summary: string;
+}
+
 interface StaffingEmployeeCandidate {
   employeeId: string;
   name: string;
@@ -31,6 +45,7 @@ interface StaffingPlanResponse {
   steps: string[];
   risk: "low" | "medium" | "high" | "critical";
   decisionExpectation: string;
+  modelRouting?: ModelRoutingPlan;
 }
 
 interface WorkPlanPreview extends StaffingPlanResponse {
@@ -61,6 +76,9 @@ const TEAM_REASON: Record<string,string> = {
 function staffReason(name:string){return TEAM_REASON[name] ?? "요청한 업무의 일부를 처리하기 위해 임시로 투입됩니다.";}
 function riskLabel(level: StaffingPlanResponse["risk"]){return level==="critical"?"매우 높음":level==="high"?"높음":level==="medium"?"보통":"낮음";}
 function draftModeLabel(status: GoalDraftResponse["status"]){return status==="fallback"?"기본 계획 모드":"AI 계획 모드";}
+function modelTierLabel(tier: ModelRoutingRecommendation["recommendedTier"]){return tier==="high-reasoning"?"고사양 reasoning":tier==="high-verification"?"고사양 verification":tier==="coding"?"코딩 특화":tier==="fast-general"?"빠른 일반":tier==="cheap-draft"?"비용 절약 초안":"runtime fallback";}
+function modelRoleLabel(role: ModelRoutingRecommendation["role"]){return role==="planner"?"Planner / PM":role==="worker"?"Worker / Developer":"Reviewer / QA";}
+function modelPriorityLabel(priority: ModelRoutingRecommendation["priority"]){return priority==="critical"?"치명":priority==="high"?"높음":priority==="normal"?"보통":"낮음";}
 function draftWarningLabel(warning:string){
   if(warning==="goal-draft-model-not-configured")return "AI 엔진 설정 전이라 기본 계획으로 preview를 생성했습니다.";
   if(warning==="goal-draft-model-error")return "AI 계획 생성이 지연되어 기본 계획으로 preview를 생성했습니다.";
@@ -301,6 +319,12 @@ export default function CompanyPage() {
                 </ul>
               </section>
             </div>
+            {planPreview.modelRouting&&<section className="card model-routing-preview" aria-label="추천 모델 배치" style={{ marginTop: 12 }}>
+              <div className="section-heading"><div><span className="eyebrow">MODEL ROUTING</span><h3>추천 모델 배치</h3><p>{planPreview.modelRouting.summary}</p></div><Link className="button-link" to={companyId ? `/settings/backend?companyId=${encodeURIComponent(companyId)}` : "/settings/backend"}>AI 엔진 설정</Link></div>
+              <div className="badge-row">{planPreview.modelRouting.signals.map(signal=><span key={signal} className="badge">{signal}</span>)}</div>
+              <div className="model-routing-grid">{planPreview.modelRouting.recommendations.map(item=><article key={item.role} className={`model-routing-card priority-${item.priority}`}><span>{modelRoleLabel(item.role)}</span><strong>{modelTierLabel(item.recommendedTier)}</strong><small>중요도 {modelPriorityLabel(item.priority)}</small><p>{item.reason}</p></article>)}</div>
+              <p className="field-help">추천은 강제 적용이 아닙니다. 실제 backend/model 변경은 AI 엔진 설정에서 저장하며, 저장된 설정은 다음 Run snapshot부터 고정됩니다.</p>
+            </section>}
             <section className="card" aria-label="예상 결과물" style={{ marginTop: 12 }}>
               <h3>예상 결과물</h3>
               <p>완료 후에는 맡긴 일 진행 기록, 실행 Task, 검증 근거, 결정 이력, 결과 브리핑을 확인할 수 있습니다.</p>
