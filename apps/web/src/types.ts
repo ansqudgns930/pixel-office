@@ -58,6 +58,22 @@ export interface Phase2Bundle {
   mergeAssessments: unknown[];
 }
 
+export interface ModelRoutingRecommendationSnapshot {
+  id: string;
+  companyId: string;
+  goalId: string;
+  runId: string | null;
+  recommendation: {
+    overallRisk: string;
+    signals: string[];
+    recommendations: Array<{ role: "planner" | "worker" | "reviewer" | string; priority: string; recommendedTier: string; reason: string }>;
+    summary: string;
+  };
+  recommendationHash: string;
+  source: string;
+  createdAt: string;
+}
+
 export interface RunDetail {
   run: StoredRun | null;
   tasks: StoredTask[];
@@ -67,6 +83,7 @@ export interface RunDetail {
   audit: AuditEvent[];
   candidate: MergeCandidateRecord | null;
   agentBindings: ResolvedAgentBinding[];
+  modelRoutingRecommendation: ModelRoutingRecommendationSnapshot | null;
   phase2: Phase2Bundle;
 }
 

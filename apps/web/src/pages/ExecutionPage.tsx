@@ -32,6 +32,8 @@ const EXCEPTION_INFO: Partial<Record<RunStatus, { anchor: RunStatus; label: stri
 };
 
 const RISK_LABEL: Record<string, string> = { low: "낮음", medium: "보통", high: "높음", critical: "매우 높음" };
+const ROLE_LABEL: Record<string, string> = { planner: "계획/PM", worker: "실행/Worker", reviewer: "검토/Reviewer" };
+const MODEL_TIER_LABEL: Record<string, string> = { "high-reasoning": "고사양 reasoning", "high-verification": "고사양 verification", coding: "코딩 특화", "fast-general": "빠른 일반", "cheap-draft": "비용 절약 초안", fallback: "runtime fallback" };
 const STATUS_LABEL: Record<RunStatus, string> = {
   CREATED: "접수", PLANNING: "계획 작성", PLAN_APPROVAL_WAITING: "계획 승인 대기", READY: "실행 준비", RUNNING: "실행 중",
   VALIDATING: "검증 중", RESULT_APPROVAL_WAITING: "결과 승인 대기", COMPLETED: "완료", PAUSED: "일시정지",
@@ -164,6 +166,7 @@ export default function ExecutionPage() {
   const allowed = (name: RunAction) => !!status && ACTION_ALLOWED[name].includes(status);
   const fileDiffs = splitUnifiedDiff(detail?.result?.patch ?? "");
   const validations = (detail?.result?.validation ?? []) as ValidationItem[];
+  const actualBindingByRole = new Map((detail?.agentBindings ?? []).map(binding => [binding.role, binding]));
   const resultApproval = detail?.approvals.find(item => item.kind === "result");
   const budgetRatio = run ? Math.min(1, run.budgetLimit > 0 ? run.spent / run.budgetLimit : 0) : 0;
   const nextAction = status === "PLAN_APPROVAL_WAITING" ? "계획을 검토하고 승인하세요." : status === "RESULT_APPROVAL_WAITING" ? "검증 결과와 Diff를 확인한 뒤 결과를 승인하세요." : status === "FAILED" || status === "BLOCKED" || status === "REVISION_REQUIRED" ? "원인을 확인한 뒤 재시도를 결정하세요." : status === "COMPLETED" ? "실행이 완료되었습니다. 결과와 감사 로그를 확인할 수 있습니다." : "현재 단계가 끝나면 다음 작업이 자동으로 활성화됩니다.";
@@ -263,11 +266,33 @@ export default function ExecutionPage() {
 
           <p className={`run-goal${safeUserText(run.goal)!==run.goal.trim()?" text-warning":""}`}><strong>Run 목표</strong> {safeUserText(run.goal)}</p>
 
-          {(detail?.agentBindings?.length ?? 0) > 0 && (
-            <section className="card" aria-label="Run Agent Backend">
-              <h2>Run Agent Backend Snapshot</h2>
-              <div className="badge-row">
-                {detail!.agentBindings.map(binding => <span className="badge" key={binding.role}><strong>{binding.role}</strong> · {binding.backend} · {binding.modelId} · {binding.resolution}</span>)}
+          {(detail?.modelRoutingRecommendation || (detail?.agentBindings?.length ?? 0) > 0) && (
+            <section className="card model-routing-preview" aria-label="Run 모델 라우팅 실행 근거">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">MODEL ROUTING EXECUTION</span>
+                  <h2>추천 모델 배치와 실제 실행 모델</h2>
+                  <p>{detail?.modelRoutingRecommendation?.recommendation.summary ?? "이 Run에는 모델 추천 provenance가 없지만, 실행 시점의 실제 agent backend snapshot은 확인할 수 있습니다."}</p>
+                </div>
+                {companyId && <Link className="button-link" to={"/settings/backend?companyId=" + encodeURIComponent(companyId) + "&source=execution-run"}>AI 엔진 설정</Link>}
+              </div>
+              {detail?.modelRoutingRecommendation && <div className="badge-row" aria-label="모델 추천 provenance metadata">
+                <span className="badge">source {detail.modelRoutingRecommendation.source}</span>
+                <span className="badge">snapshot {detail.modelRoutingRecommendation.recommendationHash.slice(0, 12)}</span>
+                <span className="badge">risk {detail.modelRoutingRecommendation.recommendation.overallRisk}</span>
+                {detail.modelRoutingRecommendation.recommendation.signals.map(signal => <span key={signal} className="badge">{signal}</span>)}
+              </div>}
+              <div className="model-routing-grid run-routing-grid">
+                {(detail?.modelRoutingRecommendation?.recommendation.recommendations ?? ["planner", "worker", "reviewer"].map(role => ({ role, priority: "unknown", recommendedTier: "미기록", reason: "이 Run에는 저장된 모델 추천 snapshot이 없습니다." }))).map(item => {
+                  const actual = actualBindingByRole.get(item.role as "planner" | "worker" | "reviewer");
+                  return <article key={item.role} className={"model-routing-card priority-" + item.priority}>
+                    <strong>{ROLE_LABEL[item.role] ?? item.role}</strong>
+                    <span>추천 · {MODEL_TIER_LABEL[item.recommendedTier] ?? item.recommendedTier}</span>
+                    <p>{item.reason}</p>
+                    <span>실제 사용 · {actual ? actual.backend + " / " + actual.modelId : "snapshot 없음"}</span>
+                    <small>{actual ? "resolution " + actual.resolution + (actual.bindingVersion ? " · binding v" + actual.bindingVersion : "") + (actual.executionSnapshotId ? " · exec " + actual.executionSnapshotId.slice(0, 8) : "") : "Run이 아직 실행 snapshot을 만들지 않았거나 standalone Run입니다."}</small>
+                  </article>;
+                })}
               </div>
             </section>
           )}

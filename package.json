@@ -46,7 +46,8 @@
     "delegated-work:browser-qa": "node scripts/verify-delegated-work-flow.cjs",
     "employee-workflow:browser-qa": "node scripts/verify-employee-workflow.cjs",
     "employee-prompt-injection:browser-qa": "node scripts/verify-employee-prompt-injection.cjs",
-    "model-routing:browser-qa": "node scripts/verify-model-routing-workflow.cjs"
+    "model-routing:browser-qa": "node scripts/verify-model-routing-workflow.cjs",
+    "execution-model-routing:browser-qa": "node scripts/verify-execution-model-routing.cjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

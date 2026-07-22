@@ -964,6 +964,12 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
     const row = this.db.prepare("SELECT * FROM goal_model_routing_recommendation_snapshots_v27 WHERE company_id=? AND goal_id=?").get(companyId, goalId) as Record<string, unknown> | undefined;
     return row ? { id: String(row.id), companyId: String(row.company_id), goalId: String(row.goal_id), runId: row.run_id == null ? null : String(row.run_id), recommendation: parse(String(row.recommendation)) as GoalModelRoutingRecommendationSnapshotRecord["recommendation"], recommendationHash: String(row.recommendation_hash), source: String(row.source), createdAt: String(row.created_at) } : null;
   }
+  goalModelRoutingRecommendationSnapshotForRun(runId: string, actorId: string): GoalModelRoutingRecommendationSnapshotRecord | null {
+    const row = this.db.prepare("SELECT * FROM goal_model_routing_recommendation_snapshots_v27 WHERE run_id=? ORDER BY created_at DESC LIMIT 1").get(runId) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    this.require(String(row.company_id), actorId, "view");
+    return { id: String(row.id), companyId: String(row.company_id), goalId: String(row.goal_id), runId: row.run_id == null ? null : String(row.run_id), recommendation: parse(String(row.recommendation)) as GoalModelRoutingRecommendationSnapshotRecord["recommendation"], recommendationHash: String(row.recommendation_hash), source: String(row.source), createdAt: String(row.created_at) };
+  }
 
   setEmployeeProfile(companyId: string, actorId: string, profile: EmployeeProfileRecord): EmployeeProfileRecord {
     this.require(companyId, actorId, "manage-org");

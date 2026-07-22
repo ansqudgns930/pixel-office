@@ -92,5 +92,12 @@ test("employee draft, activation, staffing recommendation and goal launch proven
   assert.equal(launched.snapshot.modelRoutingRecommendation.recommendationHash, launched.provisioning.modelRoutingRecommendation.recommendationHash);
   assert.match(launched.snapshot.provenance.join(" "), /employee-profile:sns-marketer:/);
   assert.match(launched.snapshot.provenance.join(" "), /model-routing:/);
+
+  const runDetailResponse = await fetch(`${base}/api/runs/${launched.provisioning.runId}?actor=owner`);
+  assert.equal(runDetailResponse.status, 200);
+  const runDetail = await runDetailResponse.json() as any;
+  assert.equal(runDetail.modelRoutingRecommendation.recommendationHash, launched.provisioning.modelRoutingRecommendation.recommendationHash);
+  assert.equal(runDetail.modelRoutingRecommendation.source, "company-plan-preview");
+  assert.equal(runDetail.modelRoutingRecommendation.recommendation.recommendations.length, 3);
   assert.deepEqual(queue.jobs, [{ runId: launched.provisioning.runId, requestId: "goal-launch:g" }]);
 });

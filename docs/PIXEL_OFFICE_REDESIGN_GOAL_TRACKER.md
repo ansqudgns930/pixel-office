@@ -822,3 +822,10 @@ Acceptance criteria:
 - Extended Backend Settings company selector to use the same user-facing company filtering as Companies/Goals while preserving the currently selected company.
 - Backend Settings now shows a disabled hidden-count option when generated QA/probe companies are suppressed.
 - Updated company option regression coverage for model routing QA companies.
+
+### 2026-07-22 - UX-R6 execution model routing evidence
+
+- Extended Run detail API responses with `modelRoutingRecommendation` when the Run was launched from a goal with frozen model routing provenance.
+- Added `goalModelRoutingRecommendationSnapshotForRun()` so Execution/Run surfaces can recover the goal-launch recommendation by `runId` without changing the existing Goals provenance card.
+- Updated `/execution` to show `MODEL ROUTING EXECUTION`, comparing recommended tier/reason per planner/worker/reviewer against the actual Run agent backend snapshot/model/resolution.
+- Extended employee workflow API regression coverage to assert `/api/runs/:runId` exposes the same model routing recommendation hash/source as goal launch provenance.
