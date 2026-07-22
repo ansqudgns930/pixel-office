@@ -762,3 +762,12 @@ Acceptance criteria:
 - Added an office signal strip above the canvas so the user sees recent events without scanning the full timeline.
 - Reordered Pixel Office sections so the density summary appears before the heavy canvas/timeline layout.
 - Capped the canvas height and improved responsive density for tablet/mobile.
+
+
+### 2026-07-22 — UX-Q7 employee hiring CTA
+
+- Strengthened Employees page product framing around optional AI employee hiring.
+- Added a primary "새 AI 직원 채용하기" CTA that jumps to the draft/activation flow.
+- Clarified that users do not need to create employees before delegating work; the default core team handles normal tasks first.
+- Added an operator/admin vs AI employee summary strip so owner/human accounts are not confused with delegated-work AI staff.
+- Updated hiring copy to emphasize job description, authority, forbidden actions, prompt profile, and provenance snapshot.
