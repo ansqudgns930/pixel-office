@@ -843,3 +843,10 @@ Acceptance criteria:
 - Added separate saved-binding and draft-input status blocks so admins can distinguish "recommendation applied to inputs" from "saved for future Runs".
 - Status states include saved value missing, recommendation match, model-only mismatch, backend/model mismatch, draft match, and draft not applied.
 - Extended model routing browser QA to assert the new saved/draft consistency hints are visible before and after `추천 적용`.
+
+### 2026-07-22 - UX-R9 Company Home routing settings status
+
+- Extended Company Home model routing preview to show current saved role-binding status beside each recommended planner/worker/reviewer tier.
+- The preview now warns when a recommended role has no saved binding and explains that company default or runtime fallback may be used until AI Engine Settings are saved.
+- Status states include saved value missing, current setting match, model-only mismatch, and backend/model mismatch.
+- Extended model routing browser QA to assert `현재 설정` and `저장값 없음` appear directly in the Company Home recommendation preview.

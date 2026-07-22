@@ -120,6 +120,8 @@ async function main() {
     await requireText(page, '고사양 verification');
     await requireText(page, 'strategy');
     await requireText(page, 'security');
+    await requireText(page, '현재 설정');
+    await requireText(page, '저장값 없음');
     await page.screenshot({ path: path.join(outDir, '01-company-plan-routing.png'), fullPage: true });
 
     const settingsLink = page.getByLabel('추천 모델 배치').getByRole('link', { name: 'AI 엔진 설정' });

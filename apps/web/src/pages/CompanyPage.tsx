@@ -79,6 +79,20 @@ function draftModeLabel(status: GoalDraftResponse["status"]){return status==="fa
 function modelTierLabel(tier: ModelRoutingRecommendation["recommendedTier"]){return tier==="high-reasoning"?"고사양 reasoning":tier==="high-verification"?"고사양 verification":tier==="coding"?"코딩 특화":tier==="fast-general"?"빠른 일반":tier==="cheap-draft"?"비용 절약 초안":"runtime fallback";}
 function modelRoleLabel(role: ModelRoutingRecommendation["role"]){return role==="planner"?"Planner / PM":role==="worker"?"Worker / Developer":"Reviewer / QA";}
 function modelPriorityLabel(priority: ModelRoutingRecommendation["priority"]){return priority==="critical"?"치명":priority==="high"?"높음":priority==="normal"?"보통":"낮음";}
+function modelTierPreset(tier: ModelRoutingRecommendation["recommendedTier"]): { backend: AgentBackendType; model: string } {
+  if (tier === "high-reasoning") return { backend: "claude-cli", model: "sonnet-5" };
+  if (tier === "high-verification") return { backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b" };
+  if (tier === "coding") return { backend: "codex-cli", model: "gpt-5" };
+  if (tier === "cheap-draft" || tier === "fallback") return { backend: "standalone", model: "phase0-model" };
+  return { backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b" };
+}
+function modelRoutingBindingStatus(bindings: AgentBinding[], item: ModelRoutingRecommendation): { label: string; tone: "ok" | "watch" | "risk"; detail: string } {
+  const preset = modelTierPreset(item.recommendedTier), binding = bindings.find(next => next.targetKind === "role" && next.targetId === item.role);
+  if (!binding) return { label: "저장값 없음", tone: "risk", detail: "이 역할은 아직 저장된 role binding이 없어 회사 기본값이나 runtime fallback을 사용할 수 있습니다." };
+  if (binding.backend === preset.backend && binding.modelId === preset.model) return { label: "현재 설정 일치", tone: "ok", detail: "저장된 role binding이 이 추천 preset과 일치합니다." };
+  if (binding.backend === preset.backend) return { label: "모델만 다름", tone: "watch", detail: "저장 모델은 " + binding.modelId + "입니다. 필요하면 AI 엔진 설정에서 추천 preset을 적용하세요." };
+  return { label: "설정 다름", tone: "watch", detail: "현재 저장값은 " + binding.backend + " / " + binding.modelId + "입니다." };
+}
 function modelRoutingSettingsHref(companyId: string, routing: ModelRoutingPlan){
   const query = new URLSearchParams();
   if (companyId) query.set("companyId", companyId);
@@ -330,8 +344,8 @@ export default function CompanyPage() {
             {planPreview.modelRouting&&<section className="card model-routing-preview" aria-label="추천 모델 배치" style={{ marginTop: 12 }}>
               <div className="section-heading"><div><span className="eyebrow">MODEL ROUTING</span><h3>추천 모델 배치</h3><p>{planPreview.modelRouting.summary}</p></div><Link className="button-link" to={modelRoutingSettingsHref(companyId, planPreview.modelRouting)}>AI 엔진 설정</Link></div>
               <div className="badge-row">{planPreview.modelRouting.signals.map(signal=><span key={signal} className="badge">{signal}</span>)}</div>
-              <div className="model-routing-grid">{planPreview.modelRouting.recommendations.map(item=><article key={item.role} className={`model-routing-card priority-${item.priority}`}><span>{modelRoleLabel(item.role)}</span><strong>{modelTierLabel(item.recommendedTier)}</strong><small>중요도 {modelPriorityLabel(item.priority)}</small><p>{item.reason}</p></article>)}</div>
-              <p className="field-help">추천은 강제 적용이 아닙니다. 실제 backend/model 변경은 AI 엔진 설정에서 저장하며, 저장된 설정은 다음 Run snapshot부터 고정됩니다.</p>
+              <div className="model-routing-grid">{planPreview.modelRouting.recommendations.map(item=>{ const status=modelRoutingBindingStatus(bindings,item); return <article key={item.role} className={`model-routing-card priority-${item.priority}`}><span>{modelRoleLabel(item.role)}</span><strong>{modelTierLabel(item.recommendedTier)}</strong><small>중요도 {modelPriorityLabel(item.priority)}</small><p>{item.reason}</p><div className={"routing-delta routing-delta-" + status.tone}><strong>현재 설정 · {status.label}</strong><span>{status.detail}</span></div></article>; })}</div>
+              <p className="field-help">추천은 강제 설정이 아닙니다. 현재 설정 상태를 확인한 뒤 AI 엔진 설정에서 추천 preset을 적용·저장하면, 다음 Run snapshot에서 실제 backend/model 적용 여부가 검증됩니다.</p>
             </section>}
             <section className="card" aria-label="예상 결과물" style={{ marginTop: 12 }}>
               <h3>예상 결과물</h3>
