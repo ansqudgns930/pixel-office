@@ -77,16 +77,20 @@ test("employee draft, activation, staffing recommendation and goal launch proven
 
   const staffingResponse = await post("/api/companies/c/staffing/plan", { actorId: "owner", rough: "Make an Instagram promotion plan for this week" });
   assert.equal(staffingResponse.status, 200);
-  const staffing = await staffingResponse.json() as { recommendedEmployees: Array<{ employeeId: string; reason: string; riskNotes: string[] }> };
+  const staffing = await staffingResponse.json() as { recommendedEmployees: Array<{ employeeId: string; reason: string; riskNotes: string[] }>; modelRouting: { overallRisk: string; signals: string[]; recommendations: Array<{ role: string; priority: string; recommendedTier: string; reason: string }>; summary: string } };
   assert.equal(staffing.recommendedEmployees[0]?.employeeId, "sns-marketer");
   assert.ok(staffing.recommendedEmployees[0]?.riskNotes.some(note => note.includes("actual posting")));
 
-  const launchResponse = await post("/api/companies/c/goals/launch", { actorId: "owner", id: "g", title: "Instagram promotion plan", description: "Weekly promotion plan", ownerId: "owner", completionCriteria: ["Promotion calendar is drafted."], budgetLimit: 10, requestedPaths: ["src"], requestedRisk: "medium", employeeProfileSnapshots: staffing.recommendedEmployees.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })) });
+  const launchResponse = await post("/api/companies/c/goals/launch", { actorId: "owner", id: "g", title: "Instagram promotion plan", description: "Weekly promotion plan", ownerId: "owner", completionCriteria: ["Promotion calendar is drafted."], budgetLimit: 10, requestedPaths: ["src"], requestedRisk: "medium", employeeProfileSnapshots: staffing.recommendedEmployees.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })), modelRoutingRecommendation: staffing.modelRouting });
   assert.equal(launchResponse.status, 201);
   const launched = await launchResponse.json() as any;
   assert.equal(launched.provisioning.employeeProfileSnapshots[0].principalId, "sns-marketer");
   assert.equal(launched.provisioning.employeeProfileSnapshots[0].profileVersion, 1);
   assert.equal(launched.snapshot.employeeProfileSnapshots[0].profile.roleTitle, "Instagram Marketing Specialist");
+  assert.equal(launched.provisioning.modelRoutingRecommendation.recommendation.recommendations.length, 3);
+  assert.equal(launched.provisioning.modelRoutingRecommendation.source, "company-plan-preview");
+  assert.equal(launched.snapshot.modelRoutingRecommendation.recommendationHash, launched.provisioning.modelRoutingRecommendation.recommendationHash);
   assert.match(launched.snapshot.provenance.join(" "), /employee-profile:sns-marketer:/);
+  assert.match(launched.snapshot.provenance.join(" "), /model-routing:/);
   assert.deepEqual(queue.jobs, [{ runId: launched.provisioning.runId, requestId: "goal-launch:g" }]);
 });

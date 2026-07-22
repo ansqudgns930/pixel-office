@@ -67,6 +67,21 @@ export interface GoalEmployeeProfileSnapshotRecord {
   reason: string | null;
   createdAt: string;
 }
+export interface GoalModelRoutingRecommendationSnapshotRecord {
+  id: string;
+  companyId: string;
+  goalId: string;
+  runId: string | null;
+  recommendation: {
+    overallRisk: string;
+    signals: string[];
+    recommendations: Array<{ role: string; priority: string; recommendedTier: string; reason: string }>;
+    summary: string;
+  };
+  recommendationHash: string;
+  source: string;
+  createdAt: string;
+}
 
 export interface EmployeeProfileRecord {
   id: string;
@@ -614,6 +629,8 @@ CREATE TABLE IF NOT EXISTS employee_profiles_v25(id TEXT PRIMARY KEY,company_id 
 CREATE INDEX IF NOT EXISTS idx_employee_profiles_v25_company ON employee_profiles_v25(company_id,status,principal_id);
 CREATE TABLE IF NOT EXISTS goal_employee_profile_snapshots_v26(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies_v4(id) ON DELETE CASCADE,goal_id TEXT NOT NULL REFERENCES company_goals_v12(id) ON DELETE CASCADE,run_id TEXT REFERENCES runs(id),principal_id TEXT NOT NULL,profile_id TEXT NOT NULL,profile_version INTEGER NOT NULL,profile TEXT NOT NULL,profile_hash TEXT NOT NULL,reason TEXT,created_at TEXT NOT NULL,UNIQUE(goal_id,principal_id));
 CREATE INDEX IF NOT EXISTS idx_goal_employee_profile_snapshots_v26_goal ON goal_employee_profile_snapshots_v26(company_id,goal_id);
+CREATE TABLE IF NOT EXISTS goal_model_routing_recommendation_snapshots_v27(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES companies_v4(id) ON DELETE CASCADE,goal_id TEXT NOT NULL REFERENCES company_goals_v12(id) ON DELETE CASCADE,run_id TEXT REFERENCES runs(id),recommendation TEXT NOT NULL,recommendation_hash TEXT NOT NULL,source TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(goal_id));
+CREATE INDEX IF NOT EXISTS idx_goal_model_routing_snapshots_v27_goal ON goal_model_routing_recommendation_snapshots_v27(company_id,goal_id);
 CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_bindings_v15(company_id,target_type,target_id,pipeline_role);
 `);
     const companyColumns = this.db
@@ -932,6 +949,20 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
     this.require(companyId, actorId, "view");
     const rows = this.db.prepare("SELECT * FROM goal_employee_profile_snapshots_v26 WHERE company_id=? AND goal_id=? ORDER BY created_at,principal_id").all(companyId, goalId) as Array<Record<string, unknown>>;
     return rows.map(row => ({ id: String(row.id), companyId: String(row.company_id), goalId: String(row.goal_id), runId: row.run_id == null ? null : String(row.run_id), principalId: String(row.principal_id), profileId: String(row.profile_id), profileVersion: Number(row.profile_version), profile: parse(String(row.profile)) as EmployeeProfileRecord, profileHash: String(row.profile_hash), reason: row.reason == null ? null : String(row.reason), createdAt: String(row.created_at) }));
+  }
+  snapshotGoalModelRoutingRecommendation(companyId: string, goalId: string, runId: string | null, actorId: string, recommendation: GoalModelRoutingRecommendationSnapshotRecord["recommendation"], source = "goal-launch"): GoalModelRoutingRecommendationSnapshotRecord {
+    this.require(companyId, actorId, "manage-org");
+    const goal = this.goal(goalId);
+    if (!goal || goal.companyId !== companyId) throw new Error("Goal missing");
+    const timestamp = now(), recommendationHash = sha(stable(recommendation)), record: GoalModelRoutingRecommendationSnapshotRecord = { id: crypto.randomUUID(), companyId, goalId, runId, recommendation, recommendationHash, source, createdAt: timestamp };
+    this.db.prepare("INSERT OR REPLACE INTO goal_model_routing_recommendation_snapshots_v27(id,company_id,goal_id,run_id,recommendation,recommendation_hash,source,created_at) VALUES(?,?,?,?,?,?,?,?)").run(record.id,companyId,goalId,runId,json(recommendation),recommendationHash,source,timestamp);
+    this.audit(companyId, "GOAL_MODEL_ROUTING_RECOMMENDATION_SNAPSHOTTED", { actorId, goalId, runId, recommendationHash, source, roles: recommendation.recommendations.map(item => item.role) });
+    return record;
+  }
+  goalModelRoutingRecommendationSnapshot(companyId: string, goalId: string, actorId: string): GoalModelRoutingRecommendationSnapshotRecord | null {
+    this.require(companyId, actorId, "view");
+    const row = this.db.prepare("SELECT * FROM goal_model_routing_recommendation_snapshots_v27 WHERE company_id=? AND goal_id=?").get(companyId, goalId) as Record<string, unknown> | undefined;
+    return row ? { id: String(row.id), companyId: String(row.company_id), goalId: String(row.goal_id), runId: row.run_id == null ? null : String(row.run_id), recommendation: parse(String(row.recommendation)) as GoalModelRoutingRecommendationSnapshotRecord["recommendation"], recommendationHash: String(row.recommendation_hash), source: String(row.source), createdAt: String(row.created_at) } : null;
   }
 
   setEmployeeProfile(companyId: string, actorId: string, profile: EmployeeProfileRecord): EmployeeProfileRecord {
@@ -4649,6 +4680,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
       metrics = this.goalMetrics(goalId),
       deliveryProcess = this.goalDeliveryProcess(companyId, goalId, actorId),
       employeeProfileSnapshots = this.goalEmployeeProfileSnapshots(companyId, goalId, actorId),
+      modelRoutingRecommendation = this.goalModelRoutingRecommendationSnapshot(companyId, goalId, actorId),
       timeline = [
         { type: "goal.created", createdAt: goal.createdAt, goalId },
         ...(
@@ -4663,6 +4695,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
       goal,
       deliveryProcess,
       employeeProfileSnapshots,
+      modelRoutingRecommendation,
       metrics,
       projects,
       nextActions: [
@@ -4680,8 +4713,8 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
             : []),
       ],
       timeline,
-      provenance: [...projectIds.map((x) => `project:${x}`), ...employeeProfileSnapshots.map(item => `employee-profile:${item.principalId}:${item.profileHash}`)],
-      snapshotHash: sha(stable({ goal, deliveryProcess, employeeProfileSnapshots: employeeProfileSnapshots.map(item => ({ principalId: item.principalId, profileHash: item.profileHash })), metrics, projectIds })),
+      provenance: [...projectIds.map((x) => `project:${x}`), ...employeeProfileSnapshots.map(item => `employee-profile:${item.principalId}:${item.profileHash}`), ...(modelRoutingRecommendation ? [`model-routing:${modelRoutingRecommendation.recommendationHash}`] : [])],
+      snapshotHash: sha(stable({ goal, deliveryProcess, employeeProfileSnapshots: employeeProfileSnapshots.map(item => ({ principalId: item.principalId, profileHash: item.profileHash })), modelRoutingRecommendation: modelRoutingRecommendation ? { recommendationHash: modelRoutingRecommendation.recommendationHash } : null, metrics, projectIds })),
     };
   }
   private goalMetrics(goalId: string): {

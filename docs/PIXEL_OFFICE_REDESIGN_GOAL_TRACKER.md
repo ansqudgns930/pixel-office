@@ -797,3 +797,12 @@ Acceptance criteria:
 - Added Backend Settings recommendation panel with role/tier/backend/model cards and explicit `추천 적용` action.
 - Recommendation apply only updates editable draft fields; saving and Live Run snapshot verification remain explicit admin actions.
 - Browser QA confirmed the recommended preset panel and apply action on `/settings/backend`.
+
+
+### 2026-07-22 — UX-R3 model routing provenance snapshots
+
+- Added durable goal model routing recommendation snapshots in `goal_model_routing_recommendation_snapshots_v27`.
+- Goal launch now stores the Company Home model routing recommendation with hash, source, goal, and Run linkage; server recomputes a fallback when older clients omit it.
+- Goal snapshots now include `modelRoutingRecommendation`, provenance includes `model-routing:<hash>`, and snapshot hash accounts for the stored recommendation hash.
+- Goals detail now shows a `MODEL ROUTING PROVENANCE` card and links the frozen recommendation back to AI Engine Settings.
+- Extended employee workflow API test to assert model routing provenance is persisted through launch.
