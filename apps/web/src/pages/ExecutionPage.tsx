@@ -50,6 +50,22 @@ const ACTION_ALLOWED: Record<RunAction, RunStatus[]> = {
 
 interface ValidationItem { kind?: string; passed?: boolean; output?: string }
 
+function bindingResolutionLabel(resolution: string | undefined): string {
+  if (resolution === "member") return "직원별 override가 role/company 설정보다 우선 적용됐습니다.";
+  if (resolution === "role") return "역할별 AI 엔진 설정이 적용됐습니다.";
+  if (resolution === "company") return "회사 기본 AI 엔진 설정이 적용됐습니다.";
+  if (resolution === "runtime-default") return "명시 설정이 없어 runtime 기본 모델로 fallback됐습니다.";
+  if (resolution === "demo-mode") return "Demo mode라 실제 외부 모델 대신 standalone demo 모델을 사용했습니다.";
+  return "아직 실행 snapshot이 없어 실제 사용 모델을 확인할 수 없습니다.";
+}
+
+function bindingRiskLabel(resolution: string | undefined, recommendedTier: string): { label: string; tone: "ok" | "watch" | "risk" } {
+  if (!resolution) return { label: "확인 필요", tone: "watch" };
+  if (resolution === "runtime-default" || resolution === "demo-mode") return { label: "추천 미적용 가능성", tone: "risk" };
+  if ((recommendedTier === "high-reasoning" || recommendedTier === "high-verification" || recommendedTier === "coding") && resolution === "company") return { label: "회사 기본 사용 — tier 확인 필요", tone: "watch" };
+  return { label: "명시 설정 적용", tone: "ok" };
+}
+
 function preferredRun(runs: RunSummary[]): RunSummary | undefined {
   const rank = (status: RunStatus) => status === "COMPLETED" ? 1 : status === "FAILED" || status === "BLOCKED" ? 2 : status === "CANCELLED" ? 3 : 0;
   return [...runs].sort((a, b) => rank(a.status) - rank(b.status) || b.updatedAt.localeCompare(a.updatedAt))[0];
@@ -284,16 +300,21 @@ export default function ExecutionPage() {
               </div>}
               <div className="model-routing-grid run-routing-grid">
                 {(detail?.modelRoutingRecommendation?.recommendation.recommendations ?? ["planner", "worker", "reviewer"].map(role => ({ role, priority: "unknown", recommendedTier: "미기록", reason: "이 Run에는 저장된 모델 추천 snapshot이 없습니다." }))).map(item => {
-                  const actual = actualBindingByRole.get(item.role as "planner" | "worker" | "reviewer");
+                  const actual = actualBindingByRole.get(item.role as "planner" | "worker" | "reviewer"), risk = bindingRiskLabel(actual?.resolution, item.recommendedTier);
                   return <article key={item.role} className={"model-routing-card priority-" + item.priority}>
                     <strong>{ROLE_LABEL[item.role] ?? item.role}</strong>
                     <span>추천 · {MODEL_TIER_LABEL[item.recommendedTier] ?? item.recommendedTier}</span>
                     <p>{item.reason}</p>
                     <span>실제 사용 · {actual ? actual.backend + " / " + actual.modelId : "snapshot 없음"}</span>
                     <small>{actual ? "resolution " + actual.resolution + (actual.bindingVersion ? " · binding v" + actual.bindingVersion : "") + (actual.executionSnapshotId ? " · exec " + actual.executionSnapshotId.slice(0, 8) : "") : "Run이 아직 실행 snapshot을 만들지 않았거나 standalone Run입니다."}</small>
+                    <div className={"routing-delta routing-delta-" + risk.tone}>
+                      <strong>차이 해석 · {risk.label}</strong>
+                      <span>{bindingResolutionLabel(actual?.resolution)}</span>
+                    </div>
                   </article>;
                 })}
               </div>
+              <p className="field-help">추천 tier는 업무 위험도와 역할별 권장 수준입니다. 실제 사용 모델은 Run 시작 시점에 고정된 binding snapshot이며, member override → role binding → company default → runtime fallback 순서로 결정됩니다.</p>
             </section>
           )}
 

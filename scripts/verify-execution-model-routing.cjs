@@ -49,7 +49,7 @@ async function main() {
     await page.goto(`${webBase}/execution?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(goalId)}&runId=${encodeURIComponent(runId)}`, { waitUntil: 'domcontentloaded' });
     await page.getByText('MODEL ROUTING EXECUTION', { exact: true }).waitFor({ timeout: 20000 });
     const body = await page.locator('body').innerText();
-    for (const expected of ['추천 모델 배치와 실제 실행 모델', '고사양 reasoning', '고사양 verification', '실제 사용', 'source company-plan-preview']) {
+    for (const expected of ['추천 모델 배치와 실제 실행 모델', '고사양 reasoning', '고사양 verification', '실제 사용', '차이 해석', 'member override → role binding → company default → runtime fallback', 'source company-plan-preview']) {
       if (!body.includes(expected)) throw new Error(`missing UI text: ${expected}`);
     }
     await page.screenshot({ path: path.join(outDir, 'execution-model-routing.png'), fullPage: true });

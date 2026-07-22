@@ -829,3 +829,10 @@ Acceptance criteria:
 - Added `goalModelRoutingRecommendationSnapshotForRun()` so Execution/Run surfaces can recover the goal-launch recommendation by `runId` without changing the existing Goals provenance card.
 - Updated `/execution` to show `MODEL ROUTING EXECUTION`, comparing recommended tier/reason per planner/worker/reviewer against the actual Run agent backend snapshot/model/resolution.
 - Extended employee workflow API regression coverage to assert `/api/runs/:runId` exposes the same model routing recommendation hash/source as goal launch provenance.
+
+### 2026-07-22 - UX-R7 execution routing mismatch explanation
+
+- Added Execution UI mismatch explanation for model routing evidence without inventing tier-to-model guarantees.
+- Each planner/worker/reviewer card now explains why the actual model was selected from the binding resolution path: member override, role binding, company default, runtime fallback, demo mode, or missing snapshot.
+- Added visible risk labels for explicit settings, company-default tier check, fallback/demo risk, and missing snapshot states.
+- Extended execution model routing browser QA to assert the new explanation copy is visible.
