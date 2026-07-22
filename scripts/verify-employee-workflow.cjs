@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const apiBase = process.env.AGENT_COMPANY_API_BASE || 'http://127.0.0.1:4310';
 const webBase = process.env.AGENT_COMPANY_WEB_BASE || 'http://127.0.0.1:5173';
-const companyId = process.env.AGENT_COMPANY_EMPLOYEE_QA_COMPANY || `employee-workflow-qa-${Date.now()}`;
+const companyId = process.env.AGENT_COMPANY_EMPLOYEE_QA_COMPANY || 'employee-workflow-qa-workflow';
 const actorId = process.env.AGENT_COMPANY_QA_ACTOR || 'admin';
 let authToken = process.env.QA_TOKEN || '';
 

@@ -4,16 +4,32 @@ const path = require('node:path');
 
 const apiBase = process.env.AGENT_COMPANY_API_BASE || 'http://127.0.0.1:4310';
 const webBase = process.env.AGENT_COMPANY_WEB_BASE || 'http://127.0.0.1:5173';
-const companyId = process.env.AGENT_COMPANY_FLOW_QA_COMPANY || `delegated-work-flow-qa-${Date.now()}`;
+const companyId = process.env.AGENT_COMPANY_FLOW_QA_COMPANY || 'delegated-work-flow-qa-workflow';
 const actorId = process.env.AGENT_COMPANY_QA_ACTOR || 'admin';
+let authToken = process.env.QA_TOKEN || '';
 const outDir = 'C:/Project/paperclip/multi-agent/agent-company-os/.runtime/visualqa/delegated-work-flow';
 fs.mkdirSync(outDir, { recursive: true });
+
+async function ensureAuthToken() {
+  if (authToken) return authToken;
+  const username = process.env.AGENT_COMPANY_QA_USERNAME || 'admin';
+  const password = process.env.AGENT_COMPANY_QA_PASSWORD || 'textadmin';
+  const response = await fetch(`${apiBase}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.token) throw new Error(`login failed for browser QA: ${response.status}`);
+  authToken = body.token;
+  return authToken;
+}
 
 async function api(pathname, options = {}) {
   const response = await fetch(apiBase + pathname, {
     ...options,
     headers: {
-      authorization: `Bearer ${process.env.QA_TOKEN}`,
+      authorization: `Bearer ${authToken}`,
       'content-type': 'application/json',
       ...(options.headers || {}),
     },
@@ -33,7 +49,8 @@ async function ensureLiveCompany() {
 }
 
 async function main() {
-  if (!process.env.QA_TOKEN || !process.env.BROWSER_AUTOMATION_EXECUTABLE) throw new Error('QA_TOKEN and BROWSER_AUTOMATION_EXECUTABLE are required');
+  if (!process.env.BROWSER_AUTOMATION_EXECUTABLE) throw new Error('BROWSER_AUTOMATION_EXECUTABLE is required');
+  await ensureAuthToken();
   await ensureLiveCompany();
   const browser = await chromium.launch({ executablePath: process.env.BROWSER_AUTOMATION_EXECUTABLE, headless: true });
   const errors = [];
@@ -50,7 +67,7 @@ async function main() {
       localStorage.setItem('agent-company-os.username', actorId);
       localStorage.setItem('agent-company-os.role', 'admin');
       localStorage.setItem('agent-company-os.lastCompany', companyId);
-    }, { token: process.env.QA_TOKEN, actorId, companyId });
+    }, { token: authToken, actorId, companyId });
 
     await page.goto(`${webBase}/company?companyId=${encodeURIComponent(companyId)}`, { waitUntil: 'domcontentloaded' });
     await page.getByText('무슨 일을 AI 회사에 맡길까요?', { exact: true }).waitFor({ timeout: 15000 });

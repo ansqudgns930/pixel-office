@@ -872,3 +872,13 @@ Acceptance criteria:
 - `--archive` is required to archive unblocked generated QA companies; the stable model routing QA company `model-routing-qa-workflow` is protected by default unless `--include-stable` is passed.
 - Candidate families include model routing QA, employee workflow QA, delegated work flow QA, employee API probe, and UI/UX review generated companies.
 - Live dry-run observed 61 companies scanned, 51 generated QA candidates, 41 blocked by active run/approval/summary blockers, and 10 unblocked dry-run candidates.
+
+### 2026-07-23 - UX-R13 stable generated QA companies for employee/delegated browser QA
+
+- Extended generated QA company hygiene beyond model routing.
+- `employee-workflow:browser-qa` now defaults to stable company id `employee-workflow-qa-workflow` instead of timestamped `employee-workflow-qa-*` companies.
+- `delegated-work:browser-qa` now defaults to stable company id `delegated-work-flow-qa-workflow` instead of timestamped `delegated-work-flow-qa-*` companies.
+- Delegated browser QA now obtains an auth token through the same QA login path used by other browser QA scripts, so it no longer requires a pre-seeded `QA_TOKEN`.
+- `qa-companies:cleanup` now protects all three stable generated QA companies by default: model routing, employee workflow, delegated work flow.
+- Added `tests/generated-qa-hygiene.test.ts` to prevent browser QA defaults from returning to timestamped generated company ids.
+- Live QA passed for employee workflow and delegated work flow using the new stable company ids.

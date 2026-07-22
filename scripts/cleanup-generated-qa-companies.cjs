@@ -2,7 +2,11 @@ const apiBase = process.env.AGENT_COMPANY_API_BASE || 'http://127.0.0.1:4310';
 const actorId = process.env.AGENT_COMPANY_QA_ACTOR || 'admin';
 const username = process.env.AGENT_COMPANY_QA_USERNAME || 'admin';
 const password = process.env.AGENT_COMPANY_QA_PASSWORD || 'textadmin';
-const stableModelRoutingCompanyId = process.env.AGENT_COMPANY_MODEL_ROUTING_QA_COMPANY || 'model-routing-qa-workflow';
+const protectedStableCompanyIds = new Set([
+  process.env.AGENT_COMPANY_MODEL_ROUTING_QA_COMPANY || 'model-routing-qa-workflow',
+  process.env.AGENT_COMPANY_EMPLOYEE_QA_COMPANY || 'employee-workflow-qa-workflow',
+  process.env.AGENT_COMPANY_FLOW_QA_COMPANY || 'delegated-work-flow-qa-workflow',
+]);
 
 const args = new Set(process.argv.slice(2));
 const archive = args.has('--archive');
@@ -28,7 +32,7 @@ function isGeneratedQaCompany(company) {
 }
 
 function isProtectedStableCompany(company) {
-  return String(company.id || '') === stableModelRoutingCompanyId;
+  return protectedStableCompanyIds.has(String(company.id || ''));
 }
 
 async function ensureAuthToken() {
@@ -107,7 +111,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     mode: archive ? 'archive' : 'dry-run',
     actorId,
-    protectedStableCompanyId: includeStable ? null : stableModelRoutingCompanyId,
+    protectedStableCompanyIds: includeStable ? [] : Array.from(protectedStableCompanyIds),
     scanned: companies.length,
     candidates: candidates.length,
     archived: results.filter((item) => item.action === 'archived').length,
@@ -116,7 +120,7 @@ async function main() {
     results,
   };
   if (!jsonOnly && !archive) {
-    console.error('Dry run only. Re-run with --archive to archive unblocked generated QA companies. Stable model routing company is protected unless --include-stable is set.');
+    console.error('Dry run only. Re-run with --archive to archive unblocked generated QA companies. Stable generated QA companies are protected unless --include-stable is set.');
   }
   console.log(JSON.stringify(summary, null, 2));
 }

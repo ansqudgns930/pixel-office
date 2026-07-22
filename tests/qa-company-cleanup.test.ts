@@ -4,9 +4,12 @@ import { readFileSync } from "node:fs";
 
 const script = readFileSync("scripts/cleanup-generated-qa-companies.cjs", "utf8");
 
-test("generated QA cleanup defaults to dry-run and protects stable model routing QA company", () => {
+test("generated QA cleanup defaults to dry-run and protects stable QA companies", () => {
   assert.match(script, /const archive = args\.has\('--archive'\)/);
-  assert.match(script, /stableModelRoutingCompanyId/);
+  assert.match(script, /protectedStableCompanyIds/);
+  assert.match(script, /model-routing-qa-workflow/);
+  assert.match(script, /employee-workflow-qa-workflow/);
+  assert.match(script, /delegated-work-flow-qa-workflow/);
   assert.match(script, /includeStable \|\| !isProtectedStableCompany/);
   assert.match(script, /Dry run only/);
 });
