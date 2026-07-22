@@ -81,7 +81,7 @@ test("employee draft, activation, staffing recommendation and goal launch proven
   assert.equal(staffing.recommendedEmployees[0]?.employeeId, "sns-marketer");
   assert.ok(staffing.recommendedEmployees[0]?.riskNotes.some(note => note.includes("actual posting")));
 
-  const launchResponse = await post("/api/companies/c/goals/launch", { actorId: "owner", id: "g", title: "Instagram promotion plan", description: "Weekly promotion plan", ownerId: "owner", completionCriteria: ["Promotion calendar is drafted."], budgetLimit: 10, requestedPaths: ["src"], requestedRisk: "medium", employeeProfileSnapshots: staffing.recommendedEmployees.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })), modelRoutingRecommendation: staffing.modelRouting });
+  const launchResponse = await post("/api/companies/c/goals/launch", { actorId: "owner", id: "g", title: "Instagram promotion plan", description: "Weekly promotion plan", ownerId: "owner", completionCriteria: ["Promotion calendar is drafted."], budgetLimit: 10, requestedPaths: ["src"], requestedRisk: "medium", employeeProfileSnapshots: staffing.recommendedEmployees.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })), modelRoutingRecommendation: { ...staffing.modelRouting, settingsStatus: staffing.modelRouting.recommendations.map(item => ({ role: item.role, recommendedTier: item.recommendedTier, expectedBackend: item.role === "worker" ? "codex-cli" : "openai-compatible", expectedModel: item.role === "worker" ? "gpt-5" : "nvidia/nemotron-3-ultra-550b-a55b", savedBackend: null, savedModel: null, status: "missing", detail: "No saved role binding at launch preview; company default or runtime fallback may be used." })) } });
   assert.equal(launchResponse.status, 201);
   const launched = await launchResponse.json() as any;
   assert.equal(launched.provisioning.employeeProfileSnapshots[0].principalId, "sns-marketer");
@@ -90,6 +90,8 @@ test("employee draft, activation, staffing recommendation and goal launch proven
   assert.equal(launched.provisioning.modelRoutingRecommendation.recommendation.recommendations.length, 3);
   assert.equal(launched.provisioning.modelRoutingRecommendation.source, "company-plan-preview");
   assert.equal(launched.snapshot.modelRoutingRecommendation.recommendationHash, launched.provisioning.modelRoutingRecommendation.recommendationHash);
+  assert.equal(launched.snapshot.modelRoutingRecommendation.recommendation.settingsStatus.length, 3);
+  assert.equal(launched.snapshot.modelRoutingRecommendation.recommendation.settingsStatus[0].status, "missing");
   assert.match(launched.snapshot.provenance.join(" "), /employee-profile:sns-marketer:/);
   assert.match(launched.snapshot.provenance.join(" "), /model-routing:/);
 

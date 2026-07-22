@@ -24,11 +24,23 @@ interface ModelRoutingRecommendation {
   reason: string;
 }
 
+interface ModelRoutingSettingsStatus {
+  role: ModelRoutingRecommendation["role"];
+  recommendedTier: ModelRoutingRecommendation["recommendedTier"];
+  expectedBackend: AgentBackendType;
+  expectedModel: string;
+  savedBackend: AgentBackendType | null;
+  savedModel: string | null;
+  status: "match" | "missing" | "model-mismatch" | "mismatch";
+  detail: string;
+}
+
 interface ModelRoutingPlan {
   overallRisk: "low" | "medium" | "high" | "critical";
   signals: string[];
   recommendations: ModelRoutingRecommendation[];
   summary: string;
+  settingsStatus?: ModelRoutingSettingsStatus[];
 }
 
 interface StaffingEmployeeCandidate {
@@ -92,6 +104,15 @@ function modelRoutingBindingStatus(bindings: AgentBinding[], item: ModelRoutingR
   if (binding.backend === preset.backend && binding.modelId === preset.model) return { label: "현재 설정 일치", tone: "ok", detail: "저장된 role binding이 이 추천 preset과 일치합니다." };
   if (binding.backend === preset.backend) return { label: "모델만 다름", tone: "watch", detail: "저장 모델은 " + binding.modelId + "입니다. 필요하면 AI 엔진 설정에서 추천 preset을 적용하세요." };
   return { label: "설정 다름", tone: "watch", detail: "현재 저장값은 " + binding.backend + " / " + binding.modelId + "입니다." };
+}
+function modelRoutingSettingsSnapshot(bindings: AgentBinding[], routing: ModelRoutingPlan): ModelRoutingSettingsStatus[] {
+  return routing.recommendations.map(item => {
+    const preset = modelTierPreset(item.recommendedTier), binding = bindings.find(next => next.targetKind === "role" && next.targetId === item.role);
+    if (!binding) return { role: item.role, recommendedTier: item.recommendedTier, expectedBackend: preset.backend, expectedModel: preset.model, savedBackend: null, savedModel: null, status: "missing", detail: "No saved role binding at launch preview; company default or runtime fallback may be used." };
+    if (binding.backend === preset.backend && binding.modelId === preset.model) return { role: item.role, recommendedTier: item.recommendedTier, expectedBackend: preset.backend, expectedModel: preset.model, savedBackend: binding.backend, savedModel: binding.modelId, status: "match", detail: "Saved role binding matched the recommended preset at launch preview." };
+    if (binding.backend === preset.backend) return { role: item.role, recommendedTier: item.recommendedTier, expectedBackend: preset.backend, expectedModel: preset.model, savedBackend: binding.backend, savedModel: binding.modelId, status: "model-mismatch", detail: "Saved backend matched the recommendation, but the saved model differed at launch preview." };
+    return { role: item.role, recommendedTier: item.recommendedTier, expectedBackend: preset.backend, expectedModel: preset.model, savedBackend: binding.backend, savedModel: binding.modelId, status: "mismatch", detail: "Saved role binding differed from the recommended preset at launch preview." };
+  });
 }
 function modelRoutingSettingsHref(companyId: string, routing: ModelRoutingPlan){
   const query = new URLSearchParams();
@@ -192,7 +213,7 @@ export default function CompanyPage() {
         requestedRisk: planPreview.risk,
         requestedPaths: ["src"],
         employeeProfileSnapshots: planPreview.recommendedEmployees?.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })) ?? [],
-        modelRoutingRecommendation: planPreview.modelRouting,
+        modelRoutingRecommendation: planPreview.modelRouting ? { ...planPreview.modelRouting, settingsStatus: modelRoutingSettingsSnapshot(bindings, planPreview.modelRouting) } : undefined,
       });
       toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
       await load();

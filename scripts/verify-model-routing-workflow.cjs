@@ -156,6 +156,8 @@ async function main() {
     await page.getByText('MODEL ROUTING PROVENANCE').waitFor({ timeout: 30000 });
     await page.screenshot({ path: path.join(outDir, '03-goals-routing-provenance.png'), fullPage: true });
     await requireText(page, 'source company-plan-preview');
+    await requireText(page, 'Launch-time AI engine settings');
+    await requireText(page, 'planner:missing');
     await requireText(page, 'snapshot', 'model routing provenance snapshot text');
 
     const url = new URL(page.url());
@@ -165,6 +167,8 @@ async function main() {
     if (!snapshot.modelRoutingRecommendation) throw new Error('goal snapshot missing modelRoutingRecommendation');
     if (snapshot.modelRoutingRecommendation.source !== 'company-plan-preview') throw new Error(`unexpected routing source: ${snapshot.modelRoutingRecommendation.source}`);
     if (!snapshot.provenance?.some((item) => String(item).startsWith('model-routing:'))) throw new Error('goal provenance missing model-routing hash');
+    if (!snapshot.modelRoutingRecommendation.recommendation.settingsStatus?.length) throw new Error('goal snapshot missing launch-time settingsStatus');
+    if (!snapshot.modelRoutingRecommendation.recommendation.settingsStatus.some((item) => item.role === 'planner' && item.status === 'missing')) throw new Error('goal snapshot missing planner launch-time settings status');
     const planner = snapshot.modelRoutingRecommendation.recommendation.recommendations.find((item) => item.role === 'planner');
     const reviewer = snapshot.modelRoutingRecommendation.recommendation.recommendations.find((item) => item.role === 'reviewer');
     if (planner?.recommendedTier !== 'high-reasoning') throw new Error(`unexpected planner tier: ${planner?.recommendedTier}`);

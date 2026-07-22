@@ -77,6 +77,7 @@ export interface GoalModelRoutingRecommendationSnapshotRecord {
     signals: string[];
     recommendations: Array<{ role: string; priority: string; recommendedTier: string; reason: string }>;
     summary: string;
+    settingsStatus?: Array<{ role: string; recommendedTier: string; expectedBackend: string; expectedModel: string; savedBackend: string | null; savedModel: string | null; status: string; detail: string }>;
   };
   recommendationHash: string;
   source: string;

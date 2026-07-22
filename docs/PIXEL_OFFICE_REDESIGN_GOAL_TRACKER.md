@@ -850,3 +850,10 @@ Acceptance criteria:
 - The preview now warns when a recommended role has no saved binding and explains that company default or runtime fallback may be used until AI Engine Settings are saved.
 - Status states include saved value missing, current setting match, model-only mismatch, and backend/model mismatch.
 - Extended model routing browser QA to assert `현재 설정` and `저장값 없음` appear directly in the Company Home recommendation preview.
+
+### 2026-07-22 - UX-R10 launch-time routing settings snapshot
+
+- Extended model routing recommendation snapshots with optional `settingsStatus` metadata so goal launch can preserve the AI engine setting state visible in Company Home at the moment of delegation.
+- Company Home launch payload now includes role-level setting status for planner/worker/reviewer: recommended tier, expected backend/model, saved backend/model, status, and detail.
+- Goals provenance now displays `Launch-time AI engine settings` so users can verify what binding state was visible when the work was delegated.
+- Extended API and browser QA to assert launch-time `settingsStatus` is persisted and visible in the Goals provenance flow.
