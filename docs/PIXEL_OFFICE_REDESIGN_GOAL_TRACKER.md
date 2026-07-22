@@ -806,3 +806,11 @@ Acceptance criteria:
 - Goal snapshots now include `modelRoutingRecommendation`, provenance includes `model-routing:<hash>`, and snapshot hash accounts for the stored recommendation hash.
 - Goals detail now shows a `MODEL ROUTING PROVENANCE` card and links the frozen recommendation back to AI Engine Settings.
 - Extended employee workflow API test to assert model routing provenance is persisted through launch.
+
+
+### 2026-07-22 — UX-R4 model routing browser QA automation
+
+- Added `scripts/verify-model-routing-workflow.cjs` and npm script `model-routing:browser-qa`.
+- Browser QA covers Company Home model routing preview, Backend Settings recommendation preset handoff/apply, goal launch, and Goals model routing provenance display.
+- QA setup creates an isolated live company, logs in through the auth fallback without printing/storing raw tokens, and writes screenshots/report under `.runtime/visualqa/model-routing-workflow/`.
+- Assertions verify planner high-reasoning, reviewer high-verification, `source: company-plan-preview`, and durable API provenance containing `model-routing:<hash>`.
