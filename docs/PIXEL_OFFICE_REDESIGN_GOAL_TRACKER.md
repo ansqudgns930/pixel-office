@@ -788,3 +788,12 @@ Acceptance criteria:
 - Attached model routing recommendations to the existing staffing plan API response.
 - Displayed recommended model placement in Company Home plan preview with role, tier, priority, reason, and AI engine settings CTA.
 - Added unit coverage for strategy, security/external action, coding, and simple copy routing.
+
+
+### 2026-07-22 — UX-R2 backend settings recommendation presets
+
+- Passed Company Home model routing recommendations into Backend Settings through URL tier parameters.
+- Preserved recommendation query parameters during settings load/refresh so the handoff panel remains visible.
+- Added Backend Settings recommendation panel with role/tier/backend/model cards and explicit `추천 적용` action.
+- Recommendation apply only updates editable draft fields; saving and Live Run snapshot verification remain explicit admin actions.
+- Browser QA confirmed the recommended preset panel and apply action on `/settings/backend`.

@@ -7,6 +7,8 @@ import { useToast } from "../components/ToastContext.tsx";
 import type { AgentBackendType, AgentBinding, CompanyRecord, ResolvedAgentBinding } from "../types.ts";
 
 type BindingTarget = "company" | "planner" | "worker" | "reviewer";
+type RoutingRole = "planner" | "worker" | "reviewer";
+type ModelRoutingTier = "high-reasoning" | "high-verification" | "coding" | "fast-general" | "cheap-draft" | "fallback";
 
 interface EngineConfig {
   target: BindingTarget;
@@ -56,6 +58,32 @@ function modelPlaceholder(backend: AgentBackendType): string {
   return "phase0-model";
 }
 
+function isModelRoutingTier(value: string | null): value is ModelRoutingTier {
+  return value === "high-reasoning" || value === "high-verification" || value === "coding" || value === "fast-general" || value === "cheap-draft" || value === "fallback";
+}
+
+function tierLabel(tier: ModelRoutingTier): string {
+  if (tier === "high-reasoning") return "고사양 reasoning";
+  if (tier === "high-verification") return "고사양 verification";
+  if (tier === "coding") return "코딩 특화";
+  if (tier === "fast-general") return "빠른 일반";
+  if (tier === "cheap-draft") return "비용 절약 초안";
+  return "runtime fallback";
+}
+
+function roleLabel(role: RoutingRole): string {
+  return role === "planner" ? "Planner / PM" : role === "worker" ? "Worker / Developer" : "Reviewer / QA";
+}
+
+function tierPreset(tier: ModelRoutingTier): Pick<EngineConfig, "backend" | "model" | "baseUrl" | "cliPath"> {
+  if (tier === "high-reasoning") return { backend: "claude-cli", model: "sonnet-5", baseUrl: "", cliPath: "" };
+  if (tier === "high-verification") return { backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b", baseUrl: "https://integrate.api.nvidia.com/v1", cliPath: "" };
+  if (tier === "coding") return { backend: "codex-cli", model: "gpt-5", baseUrl: "", cliPath: "" };
+  if (tier === "cheap-draft") return { backend: "standalone", model: "phase0-model", baseUrl: "", cliPath: "" };
+  if (tier === "fallback") return { backend: "standalone", model: "phase0-model", baseUrl: "", cliPath: "" };
+  return { backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b", baseUrl: "https://integrate.api.nvidia.com/v1", cliPath: "" };
+}
+
 export default function BackendSettingsPage() {
   const { actorId, role } = useSession();
   const toast = useToast();
@@ -71,10 +99,28 @@ export default function BackendSettingsPage() {
   const selectedCompany = companies.find(item => item.id === companyId);
   const isAdmin = role === "admin" || selectedCompany?.role === "owner";
   const isDemoCompany = selectedCompany?.mode === "demo";
+  const routingRecommendation = useMemo(() => {
+    const roles: RoutingRole[] = ["planner", "worker", "reviewer"];
+    return roles.flatMap(roleName => {
+      const tier = params.get(roleName);
+      return isModelRoutingTier(tier) ? [{ role: roleName, tier }] : [];
+    });
+  }, [params]);
   const changedSummary = useMemo(() => configs.map(config => `${config.label}: ${config.backend} / ${config.model || "모델 미선택"}`), [configs]);
 
   function updateConfig(target: BindingTarget, patch: Partial<EngineConfig>) {
     setConfigs(items => items.map(item => item.target === target ? { ...item, ...patch } : item));
+  }
+
+  function applyRoutingRecommendation() {
+    if (!routingRecommendation.length) return;
+    setConfigs(items => items.map(item => {
+      const recommendation = routingRecommendation.find(next => next.role === item.target);
+      if (!recommendation) return item;
+      const preset = tierPreset(recommendation.tier);
+      return { ...item, ...preset, modelOptions: [], loadingModels: false };
+    }));
+    toast("추천 모델 배치를 설정 초안에 적용했습니다. 저장해야 다음 Run부터 반영됩니다.");
   }
 
   function applyExistingBindings(nextBindings: AgentBinding[]) {
@@ -97,7 +143,7 @@ export default function BackendSettingsPage() {
       applyExistingBindings(nextBindings);
       setCompanyId(id);
       localStorage.setItem("agent-company-os.lastCompany", id);
-      setParams({ companyId: id }, { replace: true });
+      setParams(previous => { const next = new URLSearchParams(previous); next.set("companyId", id); return next; }, { replace: true });
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
   }
@@ -223,6 +269,12 @@ export default function BackendSettingsPage() {
       {!isAdmin && <p className="error">관리자 또는 회사 Owner만 AI 엔진 설정을 변경할 수 있습니다.</p>}
       {isDemoCompany && <div className="measurement-guidance" style={{ marginTop: 12 }}><strong>Demo 회사 주의</strong><span>이 회사는 Run snapshot에서 demo-mode가 우선되어 저장된 backend/model 대신 standalone · phase0-model로 실행됩니다. 실제 role binding 검증은 live 회사에서 진행하세요.</span></div>}
     </section>
+
+    {routingRecommendation.length > 0 && <section className="card model-routing-preview" aria-label="회사 홈 추천 모델 배치">
+      <div className="section-heading"><div><span className="eyebrow">RECOMMENDED PRESET</span><h2>회사 홈 추천 모델 배치</h2><p>직전에 검토한 업무의 중요도와 위험 신호를 바탕으로 역할별 backend/model 초안을 제안합니다.</p></div><button disabled={!isAdmin || busy} onClick={() => applyRoutingRecommendation()}>추천 적용</button></div>
+      <div className="model-routing-grid">{routingRecommendation.map(item => { const preset = tierPreset(item.tier); return <article key={item.role} className="model-routing-card"><span>{roleLabel(item.role)}</span><strong>{tierLabel(item.tier)}</strong><small>{preset.backend} · {preset.model}</small><p>적용하면 이 역할의 설정 입력값만 바뀝니다. 실제 저장은 아래 저장 버튼을 눌러야 합니다.</p></article>; })}</div>
+      <p className="field-help">추천은 강제 라우팅이 아닙니다. 저장 전 요약과 Live Run snapshot 검증으로 실제 적용 여부를 확인하세요.</p>
+    </section>}
 
     <section className="card" aria-label="AI 엔진 운영 원칙">
       <h2>운영 원칙</h2>
