@@ -857,3 +857,10 @@ Acceptance criteria:
 - Company Home launch payload now includes role-level setting status for planner/worker/reviewer: recommended tier, expected backend/model, saved backend/model, status, and detail.
 - Goals provenance now displays `Launch-time AI engine settings` so users can verify what binding state was visible when the work was delegated.
 - Extended API and browser QA to assert launch-time `settingsStatus` is persisted and visible in the Goals provenance flow.
+
+### 2026-07-22 - UX-R11 model routing QA company reuse hygiene
+
+- Changed `model-routing:browser-qa` default company id from timestamped `model-routing-qa-${Date.now()}` to stable `model-routing-qa-workflow`.
+- The QA script still accepts `AGENT_COMPANY_MODEL_ROUTING_QA_COMPANY` for isolated override runs, but normal repeated QA no longer creates a new company every execution.
+- Added regression coverage to prevent the model routing browser QA default from reverting to timestamped generated companies.
+- Browser QA confirmed the stable company path still covers Company Home recommendation preview, Backend Settings preset consistency, launch-time settings provenance, and Goals model routing provenance.
