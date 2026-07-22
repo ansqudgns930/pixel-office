@@ -8,6 +8,7 @@ test("company options hide generated QA/probe review companies but keep the sele
     { id: "delegated-work-flow-qa-1", name: "Delegated Work Flow QA" },
     { id: "employee-workflow-qa-123", name: "Employee Workflow QA Company" },
     { id: "employee-api-probe-456", name: "Probe Company" },
+    { id: "model-routing-qa-789", name: "Model Routing QA Company" },
     { id: "ui-ux-review-company", name: "UI UX Review Company" },
     { id: "test-company", name: "Test Company" },
   ];
@@ -16,6 +17,6 @@ test("company options hide generated QA/probe review companies but keep the sele
   assert.equal(companies.slice(1).every(isGeneratedTestCompany), true);
   assert.deepEqual(userFacingCompanyOptions(companies).map(company => company.id), ["real-company"]);
   assert.deepEqual(userFacingCompanyOptions(companies, "ui-ux-review-company").map(company => company.id), ["real-company", "ui-ux-review-company"]);
-  assert.equal(hiddenCompanyCount(companies, "ui-ux-review-company"), 4);
+  assert.equal(hiddenCompanyCount(companies, "ui-ux-review-company"), 5);
 });
 

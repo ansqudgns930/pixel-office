@@ -7,6 +7,8 @@ export function isGeneratedTestCompany(company: CompanyOptionLike): boolean {
     || text.includes('employee-workflow-qa')
     || text.includes('employee workflow qa')
     || text.includes('employee-api-probe')
+    || text.includes('model-routing-qa')
+    || text.includes('model routing qa')
     || text.includes('probe company')
     || text.includes('ui-ux-review-company')
     || text.includes('ui ux review company')

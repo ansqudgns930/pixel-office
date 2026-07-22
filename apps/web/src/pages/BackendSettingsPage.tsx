@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader.tsx";
 import { useSession } from "../auth/SessionContext.tsx";
 import { apiGet, apiPost } from "../api.ts";
 import { useToast } from "../components/ToastContext.tsx";
+import { hiddenCompanyCount, userFacingCompanyOptions } from "../companyOptions.ts";
 import type { AgentBackendType, AgentBinding, CompanyRecord, ResolvedAgentBinding } from "../types.ts";
 
 type BindingTarget = "company" | "planner" | "worker" | "reviewer";
@@ -96,6 +97,8 @@ export default function BackendSettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const userFacingCompanies = useMemo(() => userFacingCompanyOptions(companies, companyId), [companies, companyId]);
+  const hiddenGeneratedCompanies = useMemo(() => hiddenCompanyCount(companies, companyId), [companies, companyId]);
   const selectedCompany = companies.find(item => item.id === companyId);
   const isAdmin = role === "admin" || selectedCompany?.role === "owner";
   const isDemoCompany = selectedCompany?.mode === "demo";
@@ -153,7 +156,8 @@ export default function BackendSettingsPage() {
       .then(items => {
         const active = items.filter(item => item.status === "active");
         setCompanies(active);
-        const selected = active.some(item => item.id === companyId) ? companyId : active[0]?.id ?? "";
+        const visible = userFacingCompanyOptions(active, companyId);
+        const selected = visible.some(item => item.id === companyId) ? companyId : visible[0]?.id ?? "";
         if (selected) void load(selected);
       })
       .catch(e => setError(e instanceof Error ? e.message : String(e)));
@@ -258,7 +262,8 @@ export default function BackendSettingsPage() {
         <label className="inline">회사
           <select value={companyId} onChange={e => void load(e.target.value)}>
             <option value="">회사를 선택하세요</option>
-            {companies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.role}</option>)}
+            {userFacingCompanies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.role}</option>)}
+            {hiddenGeneratedCompanies > 0 && <option value="" disabled>테스트 회사 {hiddenGeneratedCompanies}개 숨김</option>}
           </select>
         </label>
         <button disabled={busy || !companyId} onClick={() => void load()}>{busy ? "불러오는 중…" : "설정 새로고침"}</button>

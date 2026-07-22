@@ -814,3 +814,11 @@ Acceptance criteria:
 - Browser QA covers Company Home model routing preview, Backend Settings recommendation preset handoff/apply, goal launch, and Goals model routing provenance display.
 - QA setup creates an isolated live company, logs in through the auth fallback without printing/storing raw tokens, and writes screenshots/report under `.runtime/visualqa/model-routing-workflow/`.
 - Assertions verify planner high-reasoning, reviewer high-verification, `source: company-plan-preview`, and durable API provenance containing `model-routing:<hash>`.
+
+
+### 2026-07-22 — UX-R5 QA company hygiene for model routing
+
+- Added explicit generated-company detection for `model-routing-qa-*` companies created by the model routing browser QA.
+- Extended Backend Settings company selector to use the same user-facing company filtering as Companies/Goals while preserving the currently selected company.
+- Backend Settings now shows a disabled hidden-count option when generated QA/probe companies are suppressed.
+- Updated company option regression coverage for model routing QA companies.
