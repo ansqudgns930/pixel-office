@@ -44,7 +44,8 @@
     "phase1:blind": "node dist/apps/phase1-evaluator/blind-review.js",
     "verify": "npm run runtime:check && npm run typecheck && npm run build && npm run web:build && npm test && npm run phase1:smoke && npm run phase2:smoke && npm run phase3:smoke && npm run phase4:smoke && npm run phase5:smoke && npm run phase6:smoke && npm run p0:smoke && npm run p1:office-smoke && npm run p2:game-smoke && npm run p3:execution-smoke && npm run p4:intervention-smoke && npm run p5:office-scale-smoke && npm run performance:smoke && npm run p5:browser-qa && npm run milestone-b:browser-qa && npm run milestone-c:browser-qa",
     "delegated-work:browser-qa": "node scripts/verify-delegated-work-flow.cjs",
-    "employee-workflow:browser-qa": "node scripts/verify-employee-workflow.cjs"
+    "employee-workflow:browser-qa": "node scripts/verify-employee-workflow.cjs",
+    "employee-prompt-injection:browser-qa": "node scripts/verify-employee-prompt-injection.cjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -771,3 +771,11 @@ Acceptance criteria:
 - Clarified that users do not need to create employees before delegating work; the default core team handles normal tasks first.
 - Added an operator/admin vs AI employee summary strip so owner/human accounts are not confused with delegated-work AI staff.
 - Updated hiring copy to emphasize job description, authority, forbidden actions, prompt profile, and provenance snapshot.
+
+
+### 2026-07-22 — UX-P9 employee prompt-injection browser QA
+
+- Added browser-level QA for the employee hiring UI with an explicit prompt-injection hiring request.
+- The QA verifies that unsafe override text does not leak into the employee draft preview or persisted active profile.
+- The QA verifies that approval-required and forbidden-action framing remains visible through the UI flow.
+- Updated the existing employee workflow browser QA selector to match the strengthened Q7 hiring summary label.
