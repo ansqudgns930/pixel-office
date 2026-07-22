@@ -836,3 +836,10 @@ Acceptance criteria:
 - Each planner/worker/reviewer card now explains why the actual model was selected from the binding resolution path: member override, role binding, company default, runtime fallback, demo mode, or missing snapshot.
 - Added visible risk labels for explicit settings, company-default tier check, fallback/demo risk, and missing snapshot states.
 - Extended execution model routing browser QA to assert the new explanation copy is visible.
+
+### 2026-07-22 - UX-R8 backend settings routing consistency hints
+
+- Extended Backend Settings recommendation preset panel to show whether each recommended role preset already matches the currently saved role binding.
+- Added separate saved-binding and draft-input status blocks so admins can distinguish "recommendation applied to inputs" from "saved for future Runs".
+- Status states include saved value missing, recommendation match, model-only mismatch, backend/model mismatch, draft match, and draft not applied.
+- Extended model routing browser QA to assert the new saved/draft consistency hints are visible before and after `추천 적용`.

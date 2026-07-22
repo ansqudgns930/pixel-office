@@ -85,6 +85,23 @@ function tierPreset(tier: ModelRoutingTier): Pick<EngineConfig, "backend" | "mod
   return { backend: "openai-compatible", model: "nvidia/nemotron-3-ultra-550b-a55b", baseUrl: "https://integrate.api.nvidia.com/v1", cliPath: "" };
 }
 
+function bindingForRole(bindings: AgentBinding[], role: RoutingRole): AgentBinding | undefined {
+  return bindings.find(item => item.targetKind === "role" && item.targetId === role);
+}
+
+function routingPresetStatus(actual: { backend: AgentBackendType; modelId: string } | undefined, preset: Pick<EngineConfig, "backend" | "model">): { label: string; tone: "ok" | "watch" | "risk"; detail: string } {
+  if (!actual) return { label: "저장값 없음", tone: "risk", detail: "이 역할은 아직 저장된 role binding이 없어 Run에서는 회사 기본값이나 runtime fallback을 사용할 수 있습니다." };
+  if (actual.backend === preset.backend && actual.modelId === preset.model) return { label: "추천과 일치", tone: "ok", detail: "현재 저장된 role binding이 추천 preset과 일치합니다." };
+  if (actual.backend === preset.backend) return { label: "모델만 다름", tone: "watch", detail: "backend는 같지만 저장 모델은 " + actual.modelId + "입니다." };
+  return { label: "추천과 다름", tone: "watch", detail: "저장값은 " + actual.backend + " / " + actual.modelId + "입니다." };
+}
+
+function routingDraftStatus(config: EngineConfig | undefined, preset: Pick<EngineConfig, "backend" | "model">): { label: string; tone: "ok" | "watch"; detail: string } {
+  if (!config) return { label: "초안 없음", tone: "watch", detail: "이 역할의 설정 초안을 찾지 못했습니다." };
+  if (config.backend === preset.backend && config.model.trim() === preset.model) return { label: "초안 일치", tone: "ok", detail: "현재 입력값은 추천 preset과 일치합니다. 저장하면 다음 Run부터 반영됩니다." };
+  return { label: "초안 미적용", tone: "watch", detail: "추천 적용 버튼을 누르면 입력값만 바뀌며, 별도 저장이 필요합니다." };
+}
+
 export default function BackendSettingsPage() {
   const { actorId, role } = useSession();
   const toast = useToast();
@@ -276,9 +293,9 @@ export default function BackendSettingsPage() {
     </section>
 
     {routingRecommendation.length > 0 && <section className="card model-routing-preview" aria-label="회사 홈 추천 모델 배치">
-      <div className="section-heading"><div><span className="eyebrow">RECOMMENDED PRESET</span><h2>회사 홈 추천 모델 배치</h2><p>직전에 검토한 업무의 중요도와 위험 신호를 바탕으로 역할별 backend/model 초안을 제안합니다.</p></div><button disabled={!isAdmin || busy} onClick={() => applyRoutingRecommendation()}>추천 적용</button></div>
-      <div className="model-routing-grid">{routingRecommendation.map(item => { const preset = tierPreset(item.tier); return <article key={item.role} className="model-routing-card"><span>{roleLabel(item.role)}</span><strong>{tierLabel(item.tier)}</strong><small>{preset.backend} · {preset.model}</small><p>적용하면 이 역할의 설정 입력값만 바뀝니다. 실제 저장은 아래 저장 버튼을 눌러야 합니다.</p></article>; })}</div>
-      <p className="field-help">추천은 강제 라우팅이 아닙니다. 저장 전 요약과 Live Run snapshot 검증으로 실제 적용 여부를 확인하세요.</p>
+      <div className="section-heading"><div><span className="eyebrow">RECOMMENDED PRESET</span><h2>회사 홈 추천 모델 배치</h2><p>직전에 검토한 업무의 중요도와 위험 신호를 바탕으로 역할별 backend/model 초안을 제안하고, 현재 저장값과의 차이를 먼저 보여줍니다.</p></div><button disabled={!isAdmin || busy} onClick={() => applyRoutingRecommendation()}>추천 적용</button></div>
+      <div className="model-routing-grid">{routingRecommendation.map(item => { const preset = tierPreset(item.tier), saved = routingPresetStatus(bindingForRole(bindings, item.role), preset), draft = routingDraftStatus(configs.find(config => config.target === item.role), preset); return <article key={item.role} className="model-routing-card"><span>{roleLabel(item.role)}</span><strong>{tierLabel(item.tier)}</strong><small>추천 preset · {preset.backend} · {preset.model}</small><p>적용하면 이 역할의 설정 입력값만 바뀝니다. 실제 저장은 아래 저장 버튼을 눌러야 합니다.</p><div className={"routing-delta routing-delta-" + saved.tone}><strong>현재 저장값 · {saved.label}</strong><span>{saved.detail}</span></div><div className={"routing-delta routing-delta-" + draft.tone}><strong>설정 초안 · {draft.label}</strong><span>{draft.detail}</span></div></article>; })}</div>
+      <p className="field-help">추천은 강제 라우팅이 아닙니다. 추천 적용은 입력값만 바꾸고, 저장 또는 전체 저장 이후 새 Run snapshot에서 실제 적용 여부가 확정됩니다.</p>
     </section>}
 
     <section className="card" aria-label="AI 엔진 운영 원칙">

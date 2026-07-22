@@ -129,8 +129,12 @@ async function main() {
     }
     await settingsLink.click();
     await page.getByText('회사 홈 추천 모델 배치', { exact: true }).waitFor({ timeout: 15000 });
+    await requireText(page, '현재 저장값');
+    await requireText(page, '설정 초안');
+    await requireText(page, '저장값 없음');
     await page.screenshot({ path: path.join(outDir, '02-settings-routing-preset.png'), fullPage: true });
     await page.getByRole('button', { name: '추천 적용' }).click();
+    await requireText(page, '초안 일치');
     await requireText(page, '추천 모델 배치를 설정 초안에 적용했습니다');
     await requireText(page, 'Planner / PM: claude-cli / sonnet-5', 'planner summary');
     await requireText(page, 'Reviewer / QA: openai-compatible / nvidia/nemotron-3-ultra-550b-a55b', 'reviewer summary');
