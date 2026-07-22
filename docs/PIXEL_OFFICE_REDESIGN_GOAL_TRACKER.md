@@ -744,3 +744,13 @@ Acceptance criteria:
 - Strengthened generated test-company filtering after direct UI review showed large QA/probe company noise in `/companies` and company selectors.
 - Added detection for `employee-workflow-qa`, `employee-api-probe`, `ui-ux-review-company`, browser/visual QA, generic QA, and probe company names/ids.
 - Added `tests/company-options.test.ts` to keep real companies visible, hide generated QA/probe companies, and keep the currently selected QA company visible when reviewing it directly.
+
+
+### 2026-07-22 — UX-Q5 company home primary flow
+
+- Simplified Company Home around the primary delegated-work path: choose/input work, request an AI plan, review the plan, and commit it.
+- Reduced duplicated quick links in the company selector toolbar and moved secondary destinations out of the main intake row.
+- Added selected-state feedback for sample work buttons and helper copy after a sample is inserted.
+- Added automatic scroll/focus to the generated AI plan preview.
+- Replaced the plain preview action row with a sticky commit bar that explains what happens when the user delegates the plan.
+- Reduced bottom next-action links to the three most relevant follow-up surfaces: 맡긴 일, 결정 필요, and 픽셀오피스 Live View.
