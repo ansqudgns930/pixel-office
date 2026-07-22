@@ -1001,6 +1001,15 @@ export default function PixelOfficePage() {
   )
     .slice(-5)
     .reverse();
+  const recentTimeline = [...(projection?.timeline ?? [])].reverse().slice(0, 4);
+  const nextOfficeSignal = groupedAlerts[0]
+    ? eventLabel(groupedAlerts[0].item.type)
+    : recentTimeline[0]
+      ? eventLabel(recentTimeline[0].type)
+      : connected
+        ? "업무 이벤트 대기"
+        : "연결 확인 중";
+  const decisionQueueCount = groupedAlerts.filter(({ item }) => item.priority === "high" || item.type.startsWith("approval.") || item.type.includes("approval")).length;
   return (
     <div className="pixel-office-page">
       <PageHeader
@@ -1148,6 +1157,9 @@ export default function PixelOfficePage() {
             <article><span>현재 단계</span><strong>{projection ? phaseLabel[projection.phase] : "상태 확인 중"}</strong><small>{projection?.activeAgentId ? `담당 ${projection.activeAgentId}` : connected ? "업무 이벤트 대기 중" : "연결 확인 중"}</small></article>
             <article><span>진행 업무</span><strong>{agentWorkStates.length}</strong><small>계획 {roomCounts.planning} · 개발 {roomCounts.working} · 검토 {roomCounts.validating} · 승인 {roomCounts.approval}</small></article>
             <article className={groupedAlerts.length ? "warning" : ""}><span>우선 신호</span><strong>{groupedAlerts.length}</strong><small>{groupedAlerts[0] ? eventLabel(groupedAlerts[0].item.type) : "긴급 신호 없음"}</small></article>
+            <article className={decisionQueueCount ? "warning" : ""}><span>결정 큐</span><strong>{decisionQueueCount}</strong><small>{decisionQueueCount ? "결정 필요에서 처리" : "대기 중인 승인 없음"}</small></article>
+            <article><span>현재 Run</span><strong>{shortId(projection?.runId ?? projection?.taskId ?? "대기")}</strong><small>{projection?.projectId ? `프로젝트 ${shortId(projection.projectId)}` : "프로젝트 연결 대기"}</small></article>
+            <article><span>다음 확인</span><strong>{nextOfficeSignal}</strong><small>{recentTimeline[0] ? `이벤트 #${recentTimeline[0].sequence}` : "새 업무를 맡기면 표시"}</small></article>
             <article className={game?.metrics.incidents ? "danger" : ""}><span>운영 리스크</span><strong>{game?.metrics.incidents ?? 0}</strong><small>검증 실패 {game?.metrics.validationFailures ?? 0}</small></article>
           </div>
         </section>
@@ -1257,6 +1269,10 @@ export default function PixelOfficePage() {
               {!agentWorkStates.some(work => roomFor(work.phase) === ROOMS[activeRoom]?.id) && <span className="badge">현재 이 방에서 진행 중인 업무가 없습니다.</span>}
             </div>
           </section>
+          <div className="office-signal-strip" aria-label="현재 live view 요약">
+            {recentTimeline.map((item) => <span key={item.eventId}><strong>#{item.sequence}</strong>{phaseLabel[item.phase]} · {eventLabel(item.type)}</span>)}
+            {!recentTimeline.length && <span><strong>대기</strong>새 업무 이벤트를 기다리는 중입니다.</span>}
+          </div>
           <section
             className="office-canvas"
             aria-label={`CEO실, 개발실, QA실, 승인실로 구성된 픽셀 오피스. 실제 동시 업무 ${agentWorkStates.length}건`}

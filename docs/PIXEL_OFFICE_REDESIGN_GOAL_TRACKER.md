@@ -754,3 +754,11 @@ Acceptance criteria:
 - Added automatic scroll/focus to the generated AI plan preview.
 - Replaced the plain preview action row with a sticky commit bar that explains what happens when the user delegates the plan.
 - Reduced bottom next-action links to the three most relevant follow-up surfaces: 맡긴 일, 결정 필요, and 픽셀오피스 Live View.
+
+
+### 2026-07-22 — UX-Q6 pixel office live density
+
+- Added compact Live View density cards for decision queue, current run/task, and next signal.
+- Added an office signal strip above the canvas so the user sees recent events without scanning the full timeline.
+- Reordered Pixel Office sections so the density summary appears before the heavy canvas/timeline layout.
+- Capped the canvas height and improved responsive density for tablet/mobile.
