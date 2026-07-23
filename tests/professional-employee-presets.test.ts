@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { employeeProfileForStaff } from "../apps/web/src/employeeProfiles.js";
+import { customEmployeeDraftExamples, employeeProfileForStaff, employeeProfileFromPreset, professionalEmployeePresets } from "../apps/web/src/employeeProfiles.js";
 import { deriveWorkStaffingPlan } from "../packages/staffing-rules/src/index.js";
 
 const baseInput = {
@@ -43,4 +43,30 @@ test("security work staffing includes Security and explicit prompt injection ris
   assert.ok(plan.staff.includes("Security"));
   assert.equal(plan.risk, "high");
   assert.ok(plan.steps.some((step) => /보안 엔지니어/.test(step) && /prompt injection/.test(step)));
+});
+
+
+test("professional preset catalog is separate from direct custom employee drafting", () => {
+  const presetKeys = professionalEmployeePresets.map((preset) => preset.key);
+  assert.ok(presetKeys.includes("program-manager"));
+  assert.ok(presetKeys.includes("sre"));
+  assert.ok(presetKeys.includes("finops-manager"));
+  assert.ok(presetKeys.includes("technical-writer"));
+  assert.ok(presetKeys.includes("release-manager"));
+  assert.ok(presetKeys.includes("legal-policy-manager"));
+  assert.equal(new Set(presetKeys).size, professionalEmployeePresets.length);
+  assert.ok(customEmployeeDraftExamples.some((example) => /만들어줘/.test(example)));
+  assert.ok(!customEmployeeDraftExamples.some((example) => /Program Manager|SRE|FinOps Manager/.test(example)));
+});
+
+test("preset profile activation creates a governed employee profile", () => {
+  const preset = professionalEmployeePresets.find((item) => item.key === "release-manager");
+  assert.ok(preset);
+  const profile = employeeProfileFromPreset("company-1", preset.key, preset);
+  assert.equal(profile.principalId, "release-manager");
+  assert.equal(profile.name, "Release Manager");
+  assert.equal(profile.generatedFrom, "professional-preset-catalog");
+  assert.equal(profile.status, "active");
+  assert.ok(profile.promptProfile.taskInstructions.some((item) => /전문가 판단/.test(item)));
+  assert.ok(profile.approvalRequiredActions.some((item) => /외부|결제|개인정보|계정/.test(item)));
 });

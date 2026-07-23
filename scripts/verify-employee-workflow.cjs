@@ -85,7 +85,11 @@ async function main() {
 
     await page.goto(`${webBase}/employees?companyId=${encodeURIComponent(companyId)}`, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: '직원·AI팀' }).waitFor({ timeout: 15000 });
-    await page.getByText('새 AI 직원 채용하기 · 직무/권한 초안 만들기').click();
+    await page.getByText('새 AI 직원 채용하기 · 직무 선택 또는 직접 만들기').click();
+    await page.getByRole('heading', { name: '추천 직종에서 선택' }).waitFor({ timeout: 15000 });
+    await page.getByText('Program Manager').waitFor({ timeout: 15000 });
+    await page.getByText('Release Manager').waitFor({ timeout: 15000 });
+    await page.getByRole('heading', { name: '직접 설명해서 만들기' }).waitFor({ timeout: 15000 });
     await page.getByLabel('새 직원 자연어 설명').fill('인스타그램 홍보 담당자를 채용하고 싶어. 릴스 아이디어와 캡션 초안을 만들고 실제 게시와 광고비 집행은 승인받아야 해.');
     await page.getByRole('button', { name: '직원 초안 만들기' }).click();
     await page.getByRole('heading', { name: 'Prompt profile preview' }).waitFor({ timeout: 45000 });
