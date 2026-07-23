@@ -893,3 +893,14 @@ Acceptance criteria:
 - Verified `qa-companies:archive` after cleanup; it reported 0 newly archived, 41 blocked, and 10 already archived.
 - Re-ran stable browser QA flows. Employee workflow and delegated work passed. Model routing had one launch wait timeout, then passed on immediate rerun with `errors: []`.
 - Final cleanup dry-run confirmed no new timestamped generated QA companies were added: 63 scanned, 51 candidates, 41 blocked, 10 already archived, stable QA companies protected.
+
+### 2026-07-23 - UX-R15 blocked generated QA company lifecycle report
+
+- Added non-destructive blocker reporting for generated QA companies: `npm run qa-companies:blockers-report`.
+- The report consumes the existing cleanup dry-run output and writes artifacts under `.runtime/qa-company-hygiene/`:
+  - `blocked-generated-qa-companies.json`
+  - `blocked-generated-qa-companies.md`
+- Live report result: 63 scanned companies, 51 generated QA candidates, 41 blocked, 10 already archived.
+- All 41 blocked companies share the same blocker classes: active Run, pending approval, and draft meeting summary.
+- Family breakdown: delegated-work-flow 30, model-routing 8, employee-workflow 2, ui-ux-review 1.
+- Policy recommendation is explicit: do not force-archive blocked generated QA companies automatically; resolve/cancel runs, approvals, and draft summaries through normal lifecycle or a future explicit QA-only lifecycle command, then rerun `qa-companies:archive`.
