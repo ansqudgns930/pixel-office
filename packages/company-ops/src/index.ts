@@ -928,7 +928,7 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
   }
 
 
-  snapshotGoalEmployeeProfiles(companyId: string, goalId: string, runId: string | null, actorId: string, input: Array<{ principalId: string; reason?: string | null }>): GoalEmployeeProfileSnapshotRecord[] {
+  snapshotGoalEmployeeProfiles(companyId: string, goalId: string, runId: string | null, actorId: string, input: Array<{ principalId: string; reason?: string | null; profile?: EmployeeProfileRecord }>): GoalEmployeeProfileSnapshotRecord[] {
     this.require(companyId, actorId, "manage-org");
     const goal = this.goal(goalId);
     if (!goal || goal.companyId !== companyId) throw new Error("Goal missing");
@@ -936,7 +936,8 @@ CREATE INDEX IF NOT EXISTS idx_role_bindings_v15_lookup ON role_template_binding
     for (const item of input) {
       const principalId = item.principalId.trim();
       if (!principalId) continue;
-      const profile = this.employeeProfile(companyId, principalId, "active");
+      const providedProfile = item.profile ? { ...item.profile, companyId, principalId, status: "active" as const } : null;
+      const profile = providedProfile ?? this.employeeProfile(companyId, principalId, "active");
       if (!profile) continue;
       const profileHash = sha(stable(profile));
       const record: GoalEmployeeProfileSnapshotRecord = { id: crypto.randomUUID(), companyId, goalId, runId, principalId, profileId: profile.id, profileVersion: profile.version, profile, profileHash, reason: item.reason ?? null, createdAt: timestamp };

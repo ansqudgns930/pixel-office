@@ -59,8 +59,22 @@ async function main() {
     for (const required of ['추천 전문 직원', '릴리즈 준비와 배포 판단 담당자', '문서화와 사용자 설명 담당자', '운영 안정성과 장애 대응 담당자']) {
       if (!body.includes(required)) throw new Error(`preset recommendation missing: ${required}`);
     }
+    await page.getByRole('button', { name: '이번 업무에만 임시 투입' }).first().click();
+    await page.getByText('임시 투입 선택됨').waitFor({ timeout: 15000 });
     await page.screenshot({ path: path.join(outDir, '01-company-home-preset-recommendations.png'), fullPage: true });
-    const report = { generatedAt: new Date().toISOString(), companyId, checkedPresets: ['release-manager', 'technical-writer', 'sre'], errors };
+
+    await page.getByRole('button', { name: '이 계획으로 AI 회사에 맡기기' }).click();
+    await page.waitForURL(/\/goals\?/, { timeout: 90000 });
+    await page.getByText('이 업무에 사용된 직원 profile').waitFor({ timeout: 15000 });
+    await page.getByText('임시 전문가').waitFor({ timeout: 15000 });
+    await page.getByText('temporary-').waitFor({ timeout: 15000 });
+    const goalsBody = await page.locator('body').innerText();
+    if (!goalsBody.includes('이번 업무에만 임시 투입')) throw new Error('temporary specialist provenance reason missing');
+    await page.screenshot({ path: path.join(outDir, '02-goals-temporary-specialist-provenance.png'), fullPage: true });
+
+    const url = new URL(page.url());
+    const goalId = url.searchParams.get('goalId');
+    const report = { generatedAt: new Date().toISOString(), companyId, goalId, checkedPresets: ['release-manager', 'technical-writer', 'sre'], temporarySpecialistVisible: true, errors };
     fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report, null, 2));
     if (errors.length) process.exitCode = 1;

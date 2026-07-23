@@ -181,6 +181,7 @@ export default function CompanyPage() {
   const [bindings,setBindings]=useState<AgentBinding[]>([]),[bindingKind,setBindingKind]=useState<"company"|"role"|"member">("company"),[bindingTarget,setBindingTarget]=useState(""),[bindingBackend,setBindingBackend]=useState<AgentBackendType>("standalone"),[bindingModel,setBindingModel]=useState("phase0-model");
   const [workRequest, setWorkRequest] = useState("");
   const [selectedSample, setSelectedSample] = useState("");
+  const [temporaryPresetKeys, setTemporaryPresetKeys] = useState<string[]>([]);
   const [planPreview, setPlanPreview] = useState<WorkPlanPreview | null>(null);
   const planPreviewRef = useRef<HTMLDivElement | null>(null);
 
@@ -217,6 +218,7 @@ export default function CompanyPage() {
         apiPost<StaffingPlanResponse>(`/api/companies/${encodeURIComponent(companyId)}/staffing/plan`, { actorId, rough: request }),
       ]);
       const completionCriteria = draft.completionCriteria.length ? draft.completionCriteria : ["요청한 업무가 적용되어야 합니다.", "빌드 또는 관련 검증이 통과해야 합니다.", "결과 보고에 변경 내용과 검증 근거가 포함되어야 합니다."];
+      setTemporaryPresetKeys([]);
       setPlanPreview({ draft: { ...draft, completionCriteria }, ...staffing });
     }).finally(() => setWorkAction(null));
   }
@@ -241,6 +243,16 @@ export default function CompanyPage() {
     setWorkAction("launching");
     return guarded(async () => {
       const budgetLimit = Math.max(1, Math.min(10, Number(portfolio.company.budgetLimit) || 10));
+      const temporarySnapshots = (planPreview.recommendedPresets ?? [])
+        .filter(preset => temporaryPresetKeys.includes(preset.presetKey))
+        .map(preset => {
+          const source = professionalEmployeePresets.find(item => item.key === preset.presetKey);
+          if (!source) return null;
+          const principalId = `temporary-${preset.presetKey}`;
+          const profile = employeeProfileFromPreset(companyId, principalId, source);
+          return { principalId, reason: `이번 업무에만 임시 투입 · ${preset.reason}`, profile: { ...profile, id: `${companyId}:${principalId}:temporary-preset-v1`, generatedFrom: "temporary-professional-preset" } };
+        })
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
       const result = await apiPost<{goal:{id:string};provisioning:{runId:string}}>(`/api/companies/${encodeURIComponent(companyId)}/goals/launch`, {
         actorId,
         id: uuid(),
@@ -251,7 +263,7 @@ export default function CompanyPage() {
         budgetLimit,
         requestedRisk: planPreview.risk,
         requestedPaths: ["src"],
-        employeeProfileSnapshots: planPreview.recommendedEmployees?.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })) ?? [],
+        employeeProfileSnapshots: [...(planPreview.recommendedEmployees?.map(employee => ({ principalId: employee.employeeId, reason: employee.reason })) ?? []), ...temporarySnapshots],
         modelRoutingRecommendation: planPreview.modelRouting ? { ...planPreview.modelRouting, settingsStatus: modelRoutingSettingsSnapshot(bindings, planPreview.modelRouting) } : undefined,
       });
       toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
@@ -333,7 +345,7 @@ export default function CompanyPage() {
         </div>
         <textarea
           value={workRequest}
-          onChange={e => { setWorkRequest(e.target.value); setSelectedSample(""); setPlanPreview(null); }}
+          onChange={e => { setWorkRequest(e.target.value); setSelectedSample(""); setPlanPreview(null); setTemporaryPresetKeys([]); }}
           rows={4}
           placeholder="예: 랜딩페이지 첫 화면을 더 설득력 있게 개선해줘."
           aria-label="AI 회사에 맡길 업무"
@@ -379,7 +391,7 @@ export default function CompanyPage() {
                   })}
                 </ul>
                 {!!planPreview.recommendedEmployees?.length&&<div className="custom-staffing-callout"><strong>채용한 직원이 투입됩니다</strong>{planPreview.recommendedEmployees.map(employee=><p key={employee.employeeId}><span>{employee.name}</span> · {employee.roleTitle}<br/><small>결정 필요: {employee.riskNotes.join(" · ")||"업무 중 위험 신호 발생 시"}</small></p>)}</div>}
-                {!!planPreview.recommendedPresets?.length&&<div className="custom-staffing-callout preset-recommendation-callout"><strong>추천 전문 직원</strong>{planPreview.recommendedPresets.map(preset=><p key={preset.presetKey}><span>{preset.name}</span> · {preset.roleTitle}<br/><small>{preset.reason}</small><br/>{preset.activation==="already-available"?<small>이미 회사 직원으로 준비됨 · 계획을 다시 요청하면 투입 snapshot에 포함됩니다.</small>:<button type="button" className="secondary" disabled={busy||presetAction===preset.presetKey} onClick={()=>void addRecommendedPreset(preset.presetKey)}>{presetAction===preset.presetKey?"추가 중…":"회사 직원으로 추가"}</button>}</p>)}</div>}
+                {!!planPreview.recommendedPresets?.length&&<div className="custom-staffing-callout preset-recommendation-callout"><strong>추천 전문 직원</strong>{planPreview.recommendedPresets.map(preset=>{const temporary=temporaryPresetKeys.includes(preset.presetKey);return <p key={preset.presetKey}><span>{preset.name}</span> · {preset.roleTitle}<br/><small>{preset.reason}</small><br/>{preset.activation==="already-available"?<small>이미 회사 직원으로 준비됨 · 이 업무 launch snapshot에 포함하려면 계획을 다시 요청하세요.</small>:<><button type="button" className={temporary?"secondary active":"secondary"} disabled={busy} onClick={()=>setTemporaryPresetKeys(keys=>keys.includes(preset.presetKey)?keys.filter(key=>key!==preset.presetKey):[...keys,preset.presetKey])}>{temporary?"임시 투입 선택됨":"이번 업무에만 임시 투입"}</button><button type="button" className="secondary" disabled={busy||presetAction===preset.presetKey} onClick={()=>void addRecommendedPreset(preset.presetKey)}>{presetAction===preset.presetKey?"추가 중…":"회사 직원으로 영구 추가"}</button></>}<br/><small>{temporary?"이 전문가는 회사 직원 목록에 추가되지 않고, 이 업무의 profile snapshot/hash에만 남습니다.":"반복될 역할이면 영구 추가, 한 번만 필요하면 임시 투입을 선택하세요."}</small></p>})}</div>}
               </section>
               <section className="card" aria-label="실행하면 이렇게 진행됩니다">
                 <h3>실행하면 이렇게 진행됩니다</h3>
@@ -421,7 +433,7 @@ export default function CompanyPage() {
             </section>
             {planPreview.draft.warnings.length > 0 && <p className="field-help">{planPreview.draft.warnings.map(draftWarningLabel).join(" ")}</p>}
             <div className="plan-commit-bar">
-              <div><strong>{planPreview.staff.length}명 팀 · 위험도 {riskLabel(planPreview.risk)} · {modelRoutingPlanStatus(bindings, planPreview.modelRouting).label}</strong><span>이 계획으로 맡기면 첫 Run이 준비됩니다. 결정이 필요한 지점에서만 멈추고, 결과는 맡긴 일에서 추적합니다.</span></div>
+              <div><strong>{planPreview.staff.length}명 팀 · 임시 전문가 {temporaryPresetKeys.length}명 · 위험도 {riskLabel(planPreview.risk)} · {modelRoutingPlanStatus(bindings, planPreview.modelRouting).label}</strong><span>이 계획으로 맡기면 첫 Run이 준비됩니다. 임시 전문가는 회사 직원 목록에 추가되지 않고 이 업무의 provenance snapshot에만 남습니다.</span></div>
               <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>{workAction==="launching"?"AI 회사에 맡기는 중…":"이 계획으로 AI 회사에 맡기기"}</button>
               <button className="secondary" onClick={() => setPlanPreview(null)}>계획 수정</button>
             </div>

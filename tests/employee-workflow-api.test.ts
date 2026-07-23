@@ -48,6 +48,41 @@ function snsMarketerProfile(companyId = "c", principalId = "sns-marketer"): Empl
   };
 }
 
+
+function temporaryReleaseManagerProfile(companyId = "c", principalId = "temporary-release-manager"): EmployeeProfileRecord {
+  const timestamp = new Date().toISOString();
+  return {
+    id: `${companyId}:${principalId}:temporary-preset-v1`,
+    companyId,
+    principalId,
+    name: "Release Manager",
+    department: "Operations",
+    roleTitle: "릴리즈 준비와 배포 판단 담당자",
+    summary: "릴리즈 체크리스트와 go/no-go 판단을 정리합니다.",
+    specialties: ["릴리즈", "체크리스트", "go/no-go"],
+    responsibilities: ["릴리즈 기준과 필수 검증을 정리합니다."],
+    workStyle: ["통과/보류/실패를 명확히 나눕니다."],
+    deliverableFormat: ["릴리즈 상태", "보류 조건", "rollback 기준"],
+    successCriteria: ["릴리즈 판단이 근거 기반임"],
+    allowedActions: ["릴리즈 체크리스트 초안 작성"],
+    approvalRequiredActions: ["배포", "외부 공개"],
+    forbiddenActions: ["승인 없는 배포"],
+    toolHints: ["release", "qa"],
+    internalRoleMapping: ["reviewer"],
+    promptProfile: {
+      systemAddendum: "Work as a temporary release manager for this goal only.",
+      taskInstructions: ["Separate go/no-go evidence from open risks."],
+      reportTemplate: "status / evidence / hold conditions / rollback",
+      safetyConstraints: ["Do not deploy without approval."],
+    },
+    status: "active",
+    version: 1,
+    generatedFrom: "temporary-professional-preset",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
 test("employee draft, activation, staffing recommendation and goal launch provenance are connected", async t => {
   const state = new SQLiteStateStore(":memory:"), queue = new Queue(), controller = new RunController(state, queue as never), intake = new RunIntakeService(state, controller), projects = new ProjectOperations(state.db, state), companies = new CompanyOperations(state.db, state, projects);
   projects.createWorkspace("w", "Workspace");
@@ -102,4 +137,46 @@ test("employee draft, activation, staffing recommendation and goal launch proven
   assert.equal(runDetail.modelRoutingRecommendation.source, "company-plan-preview");
   assert.equal(runDetail.modelRoutingRecommendation.recommendation.recommendations.length, 3);
   assert.deepEqual(queue.jobs, [{ runId: launched.provisioning.runId, requestId: "goal-launch:g" }]);
+});
+
+
+test("temporary professional preset profile can be snapshotted at goal launch without permanent employee", async t => {
+  const state = new SQLiteStateStore(":memory:"), queue = new Queue(), controller = new RunController(state, queue as never), intake = new RunIntakeService(state, controller), projects = new ProjectOperations(state.db, state), companies = new CompanyOperations(state.db, state, projects);
+  projects.createWorkspace("w", "Workspace");
+  companies.createCompany({ id: "c", name: "Company", workspaceId: "w", budgetLimit: 100, mandatoryReviews: ["review"], mandatoryApprovals: ["result"], allowedTools: ["build", "test"] }, "owner");
+  const server = new ControlPlaneApi(state, intake, controller, { approvePlan() {}, approveResult() {} }, projects, companies).server();
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(() => { server.close(); state.close(); });
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const base = `http://127.0.0.1:${address.port}`;
+  const profile = temporaryReleaseManagerProfile();
+
+  const launchResponse = await fetch(`${base}/api/companies/c/goals/launch`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      actorId: "owner",
+      id: "g-temp",
+      title: "Release checklist",
+      description: "Prepare release go/no-go packet",
+      ownerId: "owner",
+      completionCriteria: ["Release checklist is ready."],
+      budgetLimit: 10,
+      requestedPaths: ["src"],
+      requestedRisk: "high",
+      employeeProfileSnapshots: [{ principalId: profile.principalId, reason: "이번 업무에만 임시 투입", profile }],
+    }),
+  });
+  assert.equal(launchResponse.status, 201);
+  const launched = await launchResponse.json() as any;
+  assert.equal(launched.provisioning.employeeProfileSnapshots[0].principalId, "temporary-release-manager");
+  assert.equal(launched.provisioning.employeeProfileSnapshots[0].profile.generatedFrom, "temporary-professional-preset");
+  assert.equal(launched.snapshot.employeeProfileSnapshots[0].profile.name, "Release Manager");
+  assert.match(launched.snapshot.employeeProfileSnapshots[0].reason, /임시 투입/);
+
+  const profiles = await (await fetch(`${base}/api/companies/c/employees/profiles?actor=owner`)).json() as EmployeeProfileRecord[];
+  assert.equal(profiles.some(item => item.principalId === "temporary-release-manager"), false);
+  assert.match(launched.snapshot.provenance.join(" "), /employee-profile:temporary-release-manager:/);
 });
