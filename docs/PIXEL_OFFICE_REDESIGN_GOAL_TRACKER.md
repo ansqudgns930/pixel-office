@@ -904,3 +904,12 @@ Acceptance criteria:
 - All 41 blocked companies share the same blocker classes: active Run, pending approval, and draft meeting summary.
 - Family breakdown: delegated-work-flow 30, model-routing 8, employee-workflow 2, ui-ux-review 1.
 - Policy recommendation is explicit: do not force-archive blocked generated QA companies automatically; resolve/cancel runs, approvals, and draft summaries through normal lifecycle or a future explicit QA-only lifecycle command, then rerun `qa-companies:archive`.
+
+### 2026-07-23 - UX-R16 generated QA lifecycle closeout plan
+
+- Added plan-only QA lifecycle closeout planning: `npm run qa-companies:closeout-plan`.
+- The tool consumes `qa-companies:blockers-report`, writes `.runtime/qa-company-hygiene/generated-qa-lifecycle-closeout-plan.{json,md}`, and executes no destructive lifecycle action.
+- Live plan result: 41 blocked generated QA companies, 10 already archived, protected stable QA companies preserved.
+- The plan groups closeout work by family and risk: delegated-work-flow 30 batch candidates, model-routing 8 small-batch candidates, employee-workflow 2 small-batch candidates, ui-ux-review 1 manual-review-required.
+- Required closeout order is explicit: verify generated QA identity, terminally resolve active QA Run, resolve pending approvals, confirm/supersede draft meeting summaries, rerun cleanup, then archive newly unblocked generated QA companies.
+- The plan documents guardrails for any future executable QA-only lifecycle command: default dry-run, require explicit execute/allowlist, never include protected stable QA companies by default, stop on unexpected company naming or blocker type, and write before/after snapshots.
