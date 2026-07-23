@@ -51,7 +51,11 @@
     "qa-companies:cleanup": "node scripts/cleanup-generated-qa-companies.cjs",
     "qa-companies:archive": "node scripts/cleanup-generated-qa-companies.cjs --archive",
     "qa-companies:blockers-report": "node scripts/report-generated-qa-blockers.cjs",
-    "qa-companies:closeout-plan": "node scripts/plan-generated-qa-closeout.cjs"
+    "qa-companies:closeout-plan": "node scripts/plan-generated-qa-closeout.cjs",
+    "qa-companies:closeout-lifecycle": "node scripts/closeout-generated-qa-lifecycle.cjs",
+    "qa-companies:closeout-lifecycle:delegated-dry-run": "node scripts/closeout-generated-qa-lifecycle.cjs --family=delegated-work-flow",
+    "qa-companies:closeout-lifecycle:model-routing-dry-run": "node scripts/closeout-generated-qa-lifecycle.cjs --family=model-routing",
+    "qa-companies:closeout-lifecycle:employee-dry-run": "node scripts/closeout-generated-qa-lifecycle.cjs --family=employee-workflow"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
