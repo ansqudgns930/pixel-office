@@ -116,12 +116,12 @@ async function main() {
     await page.getByLabel('AI 회사에 맡길 업무').fill(workRequest);
     await page.getByRole('button', { name: 'AI 팀에게 계획 요청' }).click();
     await page.getByText('추천 모델 배치', { exact: true }).waitFor({ timeout: 45000 });
-    await requireText(page, '고사양 reasoning');
-    await requireText(page, '고사양 verification');
+    await requireText(page, '중요 판단용 고성능');
+    await requireText(page, '검증 강화형');
     await requireText(page, 'strategy');
     await requireText(page, 'security');
     await requireText(page, '현재 설정');
-    await requireText(page, '저장값 없음');
+    await requireText(page, '추가 확인 필요');
     await page.screenshot({ path: path.join(outDir, '01-company-plan-routing.png'), fullPage: true });
 
     const settingsLink = page.getByLabel('추천 모델 배치').getByRole('link', { name: 'AI 엔진 설정' });

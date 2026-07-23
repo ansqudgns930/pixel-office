@@ -179,6 +179,17 @@ function BackendReadiness({ evidence }: { evidence: BuildEvidence | null }) {
   );
 }
 
+function reviewBlockerContext(selected: QueueItem, packet: Packet) {
+  const openItems = packet.teamInterpretation.openItems.length;
+  const missing = packet.completeness.missing.length;
+  const run = selected.review.runId ? selected.review.runId.slice(0, 8) : "아직 Run 연결 전";
+  const consequence = packet.completeness.ready
+    ? "승인하면 AI 회사가 다음 단계로 계속 진행합니다."
+    : "지금 승인하면 근거가 부족한 상태로 다음 단계가 열릴 수 있어 보완 판단이 필요합니다.";
+  const action = packet.completeness.ready ? "승인 또는 수정 요청 중 하나를 선택하세요." : "누락 근거를 확인한 뒤 보류하거나 수정 요청하세요.";
+  return { run, openItems, missing, consequence, action };
+}
+
 function FrontendEvidence({ evidence }: { evidence: BuildEvidence | null }) {
   const frontend = evidence?.frontend;
   return (
@@ -484,6 +495,15 @@ export default function OwnerReviewsPage() {
                     : "근거 보완 필요"}
                 </span>
               </header>
+              {(() => {
+                const blocker = reviewBlockerContext(selected, packet);
+                return <section className="owner-blocker-context" aria-label="현재 막힌 업무 문맥">
+                  <article><span>막힌 맡긴 일</span><strong>{safeUserText(selected.goalTitle)}</strong><small>Goal {selected.review.goalId.slice(0, 8)} · Run {blocker.run}</small></article>
+                  <article><span>현재 단계</span><strong>{packet.stageLabel}</strong><small>{selected.review.status === "on-hold" ? "보류 중" : selected.review.status === "pending" ? "사용자 결정 대기" : selected.review.status}</small></article>
+                  <article className={packet.completeness.ready ? "context-ready" : "context-blocked"}><span>안 하면 생기는 일</span><strong>{packet.completeness.ready ? "진행 대기" : "근거 부족"}</strong><small>{blocker.consequence}</small></article>
+                  <article><span>추천 조치</span><strong>{blocker.action}</strong><small>미해결 {blocker.openItems} · 누락 근거 {blocker.missing}</small></article>
+                </section>;
+              })()}
               <nav
                 className="section-tabs owner-review-modes"
                 aria-label="검토 정보 수준"

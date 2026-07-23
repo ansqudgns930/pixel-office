@@ -88,7 +88,7 @@ const TEAM_REASON: Record<string,string> = {
 function staffReason(name:string){return TEAM_REASON[name] ?? "요청한 업무의 일부를 처리하기 위해 임시로 투입됩니다.";}
 function riskLabel(level: StaffingPlanResponse["risk"]){return level==="critical"?"매우 높음":level==="high"?"높음":level==="medium"?"보통":"낮음";}
 function draftModeLabel(status: GoalDraftResponse["status"]){return status==="fallback"?"기본 계획 모드":"AI 계획 모드";}
-function modelTierLabel(tier: ModelRoutingRecommendation["recommendedTier"]){return tier==="high-reasoning"?"고사양 reasoning":tier==="high-verification"?"고사양 verification":tier==="coding"?"코딩 특화":tier==="fast-general"?"빠른 일반":tier==="cheap-draft"?"비용 절약 초안":"runtime fallback";}
+function modelTierLabel(tier: ModelRoutingRecommendation["recommendedTier"]){return tier==="high-reasoning"?"중요 판단용 고성능":tier==="high-verification"?"검증 강화형":tier==="coding"?"구현 특화":tier==="fast-general"?"빠른 일반 처리":tier==="cheap-draft"?"초안·비용 절약형":"기본 엔진 사용";}
 function modelRoleLabel(role: ModelRoutingRecommendation["role"]){return role==="planner"?"Planner / PM":role==="worker"?"Worker / Developer":"Reviewer / QA";}
 function modelPriorityLabel(priority: ModelRoutingRecommendation["priority"]){return priority==="critical"?"치명":priority==="high"?"높음":priority==="normal"?"보통":"낮음";}
 function modelTierPreset(tier: ModelRoutingRecommendation["recommendedTier"]): { backend: AgentBackendType; model: string } {
@@ -100,10 +100,10 @@ function modelTierPreset(tier: ModelRoutingRecommendation["recommendedTier"]): {
 }
 function modelRoutingBindingStatus(bindings: AgentBinding[], item: ModelRoutingRecommendation): { label: string; tone: "ok" | "watch" | "risk"; detail: string } {
   const preset = modelTierPreset(item.recommendedTier), binding = bindings.find(next => next.targetKind === "role" && next.targetId === item.role);
-  if (!binding) return { label: "저장값 없음", tone: "risk", detail: "이 역할은 아직 저장된 role binding이 없어 회사 기본값이나 runtime fallback을 사용할 수 있습니다." };
-  if (binding.backend === preset.backend && binding.modelId === preset.model) return { label: "현재 설정 일치", tone: "ok", detail: "저장된 role binding이 이 추천 preset과 일치합니다." };
-  if (binding.backend === preset.backend) return { label: "모델만 다름", tone: "watch", detail: "저장 모델은 " + binding.modelId + "입니다. 필요하면 AI 엔진 설정에서 추천 preset을 적용하세요." };
-  return { label: "설정 다름", tone: "watch", detail: "현재 저장값은 " + binding.backend + " / " + binding.modelId + "입니다." };
+  if (!binding) return { label: "추가 확인 필요", tone: "risk", detail: "이 담당자는 아직 전용 AI 엔진이 저장되지 않았습니다. 맡기기는 가능하지만, 실행 시 회사 기본 엔진으로 처리될 수 있습니다." };
+  if (binding.backend === preset.backend && binding.modelId === preset.model) return { label: "권장 설정 준비됨", tone: "ok", detail: "현재 저장된 AI 엔진이 이 업무의 권장 배치와 맞습니다." };
+  if (binding.backend === preset.backend) return { label: "비슷하지만 모델 다름", tone: "watch", detail: "같은 계열 엔진을 쓰지만 저장 모델은 " + binding.modelId + "입니다. 더 안정적으로 맡기려면 권장 preset을 검토하세요." };
+  return { label: "권장과 다름", tone: "watch", detail: "현재 저장값은 " + binding.backend + " / " + binding.modelId + "입니다. 중요한 업무라면 맡기기 전에 AI 엔진 설정을 확인하세요." };
 }
 function modelRoutingSettingsSnapshot(bindings: AgentBinding[], routing: ModelRoutingPlan): ModelRoutingSettingsStatus[] {
   return routing.recommendations.map(item => {
@@ -120,6 +120,18 @@ function modelRoutingSettingsHref(companyId: string, routing: ModelRoutingPlan){
   query.set("source", "company-plan-preview");
   for (const item of routing.recommendations) query.set(item.role, item.recommendedTier);
   return `/settings/backend?${query.toString()}`;
+}
+
+function modelRoutingPlanStatus(bindings: AgentBinding[], routing?: ModelRoutingPlan): { label: string; tone: "ok" | "watch" | "risk"; detail: string } {
+  if (!routing?.recommendations.length) return { label: "기본 설정", tone: "watch", detail: "이 업무는 별도 AI 엔진 추천 없이 기본 설정으로 처리됩니다." };
+  const statuses = routing.recommendations.map(item => modelRoutingBindingStatus(bindings, item));
+  if (statuses.some(status => status.tone === "risk")) return { label: "엔진 확인 필요", tone: "risk", detail: "일부 담당자의 전용 AI 엔진이 아직 저장되지 않았습니다." };
+  if (statuses.some(status => status.tone === "watch")) return { label: "권장과 일부 다름", tone: "watch", detail: "실행은 가능하지만 권장 배치와 현재 저장값이 완전히 같지는 않습니다." };
+  return { label: "권장 설정 준비됨", tone: "ok", detail: "핵심 담당자의 AI 엔진 설정이 권장 배치와 맞습니다." };
+}
+
+function planExpectedOutcome(preview: WorkPlanPreview, request: string) {
+  return preview.draft.completionCriteria[0] ?? preview.draft.description ?? request.trim() ?? "요청한 업무의 실행 결과와 검증 근거";
 }
 function draftWarningLabel(warning:string){
   if(warning==="goal-draft-model-not-configured")return "AI 엔진 설정 전이라 기본 계획으로 preview를 생성했습니다.";
@@ -310,19 +322,27 @@ export default function CompanyPage() {
             <strong>AI 계획 제안</strong>
             <div style={{ marginTop: 8 }}><strong>{planPreview.draft.title}</strong></div>
             <p>{planPreview.draft.description || workRequest.trim()}</p>
-            <div className="badge-row">
-              {planPreview.staff.map(member => <span key={member} className="badge">{member}</span>)}
-              <span className="badge">위험도 {planPreview.risk}</span>
+            {(() => {
+              const routingStatus = modelRoutingPlanStatus(bindings, planPreview.modelRouting);
+              return <div className="plan-summary-rail" aria-label="맡기기 전 핵심 판단 요약">
+                <article><span>투입 팀</span><strong>{planPreview.staff.length}명</strong><small>{planPreview.staff.slice(0, 4).join(" · ")}{planPreview.staff.length > 4 ? " 외" : ""}</small></article>
+                <article className={`summary-tone-${planPreview.risk === "critical" || planPreview.risk === "high" ? "risk" : planPreview.risk === "medium" ? "watch" : "ok"}`}><span>업무 위험도</span><strong>{riskLabel(planPreview.risk)}</strong><small>{planPreview.decisionExpectation}</small></article>
+                <article className={`summary-tone-${routingStatus.tone}`}><span>AI 엔진 상태</span><strong>{routingStatus.label}</strong><small>{routingStatus.detail}</small></article>
+                <article><span>예상 결과</span><strong>결과·검증 근거</strong><small>{planExpectedOutcome(planPreview, workRequest)}</small></article>
+              </div>;
+            })()}
+            <div className="badge-row compact-plan-badges">
               <span className="badge">{draftModeLabel(planPreview.draft.status)}</span>
+              <span className="badge">결정 예상 · {planPreview.decisionExpectation}</span>
+              {planPreview.modelRouting&&<span className="badge">모델 추천 {planPreview.modelRouting.recommendations.length}개</span>}
             </div>
-            <ol>
-              {planPreview.steps.map(step => <li key={step}>{step}</li>)}
-            </ol>
-            <div><strong>완료 조건</strong></div>
-            <ul>
-              {planPreview.draft.completionCriteria.map(item => <li key={item}>{item}</li>)}
-            </ul>
-            <p><strong>사용자 결정 필요 예상:</strong> {planPreview.decisionExpectation}</p>
+            <details className="plan-preview-details" open>
+              <summary>실행 순서와 완료 조건 보기</summary>
+              <div className="plan-detail-grid">
+                <div><strong>실행 순서</strong><ol>{planPreview.steps.map(step => <li key={step}>{step}</li>)}</ol></div>
+                <div><strong>완료 조건</strong><ul>{planPreview.draft.completionCriteria.map(item => <li key={item}>{item}</li>)}</ul></div>
+              </div>
+            </details>
             <div className="grid" style={{ marginTop: 12 }}>
               <section className="card" aria-label="왜 이 팀인가요">
                 <h3>왜 이 팀인가요?</h3>
@@ -366,7 +386,7 @@ export default function CompanyPage() {
               <div className="section-heading"><div><span className="eyebrow">MODEL ROUTING</span><h3>추천 모델 배치</h3><p>{planPreview.modelRouting.summary}</p></div><Link className="button-link" to={modelRoutingSettingsHref(companyId, planPreview.modelRouting)}>AI 엔진 설정</Link></div>
               <div className="badge-row">{planPreview.modelRouting.signals.map(signal=><span key={signal} className="badge">{signal}</span>)}</div>
               <div className="model-routing-grid">{planPreview.modelRouting.recommendations.map(item=>{ const status=modelRoutingBindingStatus(bindings,item); return <article key={item.role} className={`model-routing-card priority-${item.priority}`}><span>{modelRoleLabel(item.role)}</span><strong>{modelTierLabel(item.recommendedTier)}</strong><small>중요도 {modelPriorityLabel(item.priority)}</small><p>{item.reason}</p><div className={"routing-delta routing-delta-" + status.tone}><strong>현재 설정 · {status.label}</strong><span>{status.detail}</span></div></article>; })}</div>
-              <p className="field-help">추천은 강제 설정이 아닙니다. 현재 설정 상태를 확인한 뒤 AI 엔진 설정에서 추천 preset을 적용·저장하면, 다음 Run snapshot에서 실제 backend/model 적용 여부가 검증됩니다.</p>
+              <p className="field-help">추천은 자동 변경이 아닙니다. 중요한 업무라면 AI 엔진 설정에서 권장 preset을 검토·저장하세요. 저장 후 새 실행 기록에서 실제 사용 엔진을 확인할 수 있습니다.</p>
             </section>}
             <section className="card" aria-label="예상 결과물" style={{ marginTop: 12 }}>
               <h3>예상 결과물</h3>
@@ -374,7 +394,7 @@ export default function CompanyPage() {
             </section>
             {planPreview.draft.warnings.length > 0 && <p className="field-help">{planPreview.draft.warnings.map(draftWarningLabel).join(" ")}</p>}
             <div className="plan-commit-bar">
-              <div><strong>이 계획으로 맡기면 바로 실행 프로젝트와 첫 Run이 준비됩니다.</strong><span>결정이 필요한 지점에서만 멈추고, 결과는 맡긴 일에서 추적합니다.</span></div>
+              <div><strong>{planPreview.staff.length}명 팀 · 위험도 {riskLabel(planPreview.risk)} · {modelRoutingPlanStatus(bindings, planPreview.modelRouting).label}</strong><span>이 계획으로 맡기면 첫 Run이 준비됩니다. 결정이 필요한 지점에서만 멈추고, 결과는 맡긴 일에서 추적합니다.</span></div>
               <button disabled={busy || !portfolio} onClick={() => void launchWorkPlan()}>{workAction==="launching"?"AI 회사에 맡기는 중…":"이 계획으로 AI 회사에 맡기기"}</button>
               <button className="secondary" onClick={() => setPlanPreview(null)}>계획 수정</button>
             </div>
