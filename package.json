@@ -48,7 +48,8 @@
     "employee-prompt-injection:browser-qa": "node scripts/verify-employee-prompt-injection.cjs",
     "model-routing:browser-qa": "node scripts/verify-model-routing-workflow.cjs",
     "execution-model-routing:browser-qa": "node scripts/verify-execution-model-routing.cjs",
-    "qa-companies:cleanup": "node scripts/cleanup-generated-qa-companies.cjs"
+    "qa-companies:cleanup": "node scripts/cleanup-generated-qa-companies.cjs",
+    "qa-companies:archive": "node scripts/cleanup-generated-qa-companies.cjs --archive"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

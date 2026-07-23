@@ -25,3 +25,9 @@ test("generated QA cleanup recognizes known browser QA company families", () => 
     assert.match(script, new RegExp(token));
   }
 });
+
+const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+
+test("package exposes a dedicated generated QA archive script", () => {
+  assert.equal(pkg.scripts["qa-companies:archive"], "node scripts/cleanup-generated-qa-companies.cjs --archive");
+});

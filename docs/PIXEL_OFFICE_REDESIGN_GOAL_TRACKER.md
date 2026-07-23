@@ -882,3 +882,14 @@ Acceptance criteria:
 - `qa-companies:cleanup` now protects all three stable generated QA companies by default: model routing, employee workflow, delegated work flow.
 - Added `tests/generated-qa-hygiene.test.ts` to prevent browser QA defaults from returning to timestamped generated company ids.
 - Live QA passed for employee workflow and delegated work flow using the new stable company ids.
+
+### 2026-07-23 - UX-R14 Pixel Office QA data hygiene closeout
+
+- Consolidated the remaining QA hygiene priorities into one closeout goal.
+- Ran generated QA cleanup archive directly with `node scripts/cleanup-generated-qa-companies.cjs --archive --json` after confirming the current npm argument forwarding path did not pass `--archive` through to the script.
+- Archived 10 unblocked generated QA companies. 41 generated QA companies remained blocked because they still have active Run, pending approval, or draft meeting summary blockers.
+- Stable QA companies stayed protected: `model-routing-qa-workflow`, `employee-workflow-qa-workflow`, and `delegated-work-flow-qa-workflow`.
+- Added dedicated npm script `qa-companies:archive` so future archive runs do not depend on fragile npm argument forwarding.
+- Verified `qa-companies:archive` after cleanup; it reported 0 newly archived, 41 blocked, and 10 already archived.
+- Re-ran stable browser QA flows. Employee workflow and delegated work passed. Model routing had one launch wait timeout, then passed on immediate rerun with `errors: []`.
+- Final cleanup dry-run confirmed no new timestamped generated QA companies were added: 63 scanned, 51 candidates, 41 blocked, 10 already archived, stable QA companies protected.
