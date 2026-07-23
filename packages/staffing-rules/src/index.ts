@@ -47,7 +47,7 @@ function scoreEmployee(request:string,profile:StaffingProfileInput): number {
 export function deriveWorkStaffingPlan(request: string, customEmployees: StaffingProfileInput[] = []): WorkStaffingPlan {
   const lower = request.toLowerCase();
   const ui = /ui|ux|화면|디자인|레이아웃|버튼|랜딩|온보딩/.test(lower);
-  const security = /auth|인증|권한|보안|security|token|secret|비밀/.test(lower);
+  const security = /auth|인증|권한|보안|security|token|secret|비밀|개인정보|privacy|pii|prompt injection|프롬프트 인젝션/.test(lower);
   const copy = /문구|카피|copy|랜딩|버튼/.test(lower);
   const large = /전체|서비스|기획|전략|대규모|리팩터|architecture|구조/.test(lower);
   const staff = new Set<string>();
@@ -77,7 +77,7 @@ export function deriveWorkStaffingPlan(request: string, customEmployees: Staffin
   const steps = [
     "업무 목표와 완료 조건 정리",
     ui ? "현재 화면/사용자 흐름 점검" : "관련 코드와 현재 상태 확인",
-    security ? "권한·보안 위험 지점 확인" : "실행 범위와 변경 계획 작성",
+    security ? "보안 엔지니어가 인증·권한·토큰·prompt injection 위험 확인" : "실행 범위와 변경 계획 작성",
     "필요한 변경 수행",
     "빌드·테스트·검증",
     "검증된 결과 보고와 다음 작업 추천",

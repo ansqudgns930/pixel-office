@@ -28,15 +28,15 @@ const CORE_TEAM = [
  { key: "pm", label: "PM", responsibility: "업무 분해 · 진행 관리 · 담당자 배정", matches: (person: Staff) => /pm|manager/i.test(person.principalId) || person.role === "department-manager" },
  { key: "designer", label: "Designer", responsibility: "UI·UX · 화면 구조 · 콘텐츠 구성", matches: (person: Staff) => /designer|design|ux/i.test(person.principalId) || person.specialty === "design" || person.specialty === "ux" },
  { key: "developer", label: "Developer", responsibility: "코드 작성 · 수정 · 실행", matches: (person: Staff) => /developer|dev|builder|worker/i.test(person.principalId) && !/designer/i.test(person.principalId) },
- { key: "qa", label: "QA", responsibility: "테스트 · 오류 확인 · 완료조건 검증", matches: (person: Staff) => /qa|review|test/i.test(person.principalId) || person.characterStyle === "reviewer" },
+ { key: "qa", label: "QA 엔지니어", responsibility: "테스트 · 오류 확인 · 완료조건 검증", matches: (person: Staff) => /qa|review|test/i.test(person.principalId) || person.characterStyle === "reviewer" },
+ { key: "security", label: "보안 엔지니어", responsibility: "인증 · 권한 · 토큰 · 프롬프트 인젝션 위험 검토", matches: (person: Staff) => /security|보안|auth|token|secret/i.test(person.principalId) || person.specialty === "security" },
 ] as const;
 
 const SPECIALIST_LOUNGE = [
  { label: "Researcher", responsibility: "자료 조사 · 경쟁 분석 · 요구사항 탐색" },
  { label: "Data Analyst", responsibility: "지표 · 로그 · 데이터 분석" },
  { label: "Marketing", responsibility: "포지셔닝 · 캠페인 · 메시지 전략" },
- { label: "Security", responsibility: "인증 · 권한 · 보안 · 배포 리스크" },
- { label: "Copywriter", responsibility: "문구 · 온보딩 · 버튼 · 랜딩 카피" },
+  { label: "Copywriter", responsibility: "문구 · 온보딩 · 버튼 · 랜딩 카피" },
  { label: "Legal", responsibility: "약관 · 개인정보 · 정책 리스크" },
  { label: "Extra Developer", responsibility: "큰 작업 병렬 구현 · 전문 기술 영역" },
 ];
