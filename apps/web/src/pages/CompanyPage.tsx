@@ -8,6 +8,7 @@ import { hiddenCompanyCount, userFacingCompanyOptions } from "../companyOptions.
 import { useToast } from "../components/ToastContext.tsx";
 import type { AgentBackendType,AgentBinding,CompanyCommandCenterSnapshot,CompanyRecord } from "../types.ts";
 import { uuid } from "../format.ts";
+import { employeeProfileFromPreset, professionalEmployeePresets } from "../employeeProfiles.ts";
 
 interface GoalDraftResponse {
   title: string;
@@ -51,9 +52,19 @@ interface StaffingEmployeeCandidate {
   riskNotes: string[];
 }
 
+interface StaffingPresetCandidate {
+  presetKey: string;
+  name: string;
+  roleTitle: string;
+  reason: string;
+  signals: string[];
+  activation: "add-to-company" | "already-available";
+}
+
 interface StaffingPlanResponse {
   staff: string[];
   recommendedEmployees?: StaffingEmployeeCandidate[];
+  recommendedPresets?: StaffingPresetCandidate[];
   steps: string[];
   risk: "low" | "medium" | "high" | "critical";
   decisionExpectation: string;
@@ -163,6 +174,7 @@ export default function CompanyPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [workAction, setWorkAction] = useState<null | "planning" | "launching">(null);
+  const [presetAction, setPresetAction] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "organization" | "briefing">("overview");
   const [companies,setCompanies]=useState<Array<CompanyRecord&{role:string;projectCount:number}>>([]),[hiddenCompanies,setHiddenCompanies]=useState(0);
   const [health,setHealth]=useState<{metrics:{completedRuns:number;qualityPasses:number;validationFailures:number;incidents:number}}|null>(null);
@@ -209,6 +221,21 @@ export default function CompanyPage() {
     }).finally(() => setWorkAction(null));
   }
 
+  function addRecommendedPreset(presetKey: string) {
+    const preset = professionalEmployeePresets.find(item => item.key === presetKey);
+    if (!preset || !companyId) return;
+    setPresetAction(presetKey);
+    return guarded(async () => {
+      const already = snapshot?.pixel.agents.some(agent => agent.principal_id === presetKey);
+      if (already) { toast(`${preset.name}는 이미 직원·AI팀에 있습니다.`); return; }
+      const profile = employeeProfileFromPreset(companyId, presetKey, preset);
+      await apiPost(`/api/companies/${encodeURIComponent(companyId)}/employees/activate`, { actorId, principalId: presetKey, role: "member", departmentId: null, kind: "agent", profile });
+      toast(`${preset.name} 프리셋 직원을 회사에 추가했습니다. 계획을 다시 요청하면 투입 직원 snapshot에 포함할 수 있습니다.`);
+      await load();
+      setPlanPreview(current => current ? { ...current, recommendedPresets: current.recommendedPresets?.map(item => item.presetKey === presetKey ? { ...item, activation: "already-available" } : item) } : current);
+    }).finally(() => setPresetAction(null));
+  }
+
   function launchWorkPlan() {
     if (!planPreview || !portfolio) return;
     setWorkAction("launching");
@@ -228,7 +255,6 @@ export default function CompanyPage() {
         modelRoutingRecommendation: planPreview.modelRouting ? { ...planPreview.modelRouting, settingsStatus: modelRoutingSettingsSnapshot(bindings, planPreview.modelRouting) } : undefined,
       });
       toast("업무를 AI 회사에 맡겼습니다. 진행 상황은 맡긴 일에서 확인하세요.");
-      await load();
       navigate(`/goals?companyId=${encodeURIComponent(companyId)}&goalId=${encodeURIComponent(result.goal.id)}&launched=1`);
     }).finally(() => setWorkAction(null));
   }
@@ -353,6 +379,7 @@ export default function CompanyPage() {
                   })}
                 </ul>
                 {!!planPreview.recommendedEmployees?.length&&<div className="custom-staffing-callout"><strong>채용한 직원이 투입됩니다</strong>{planPreview.recommendedEmployees.map(employee=><p key={employee.employeeId}><span>{employee.name}</span> · {employee.roleTitle}<br/><small>결정 필요: {employee.riskNotes.join(" · ")||"업무 중 위험 신호 발생 시"}</small></p>)}</div>}
+                {!!planPreview.recommendedPresets?.length&&<div className="custom-staffing-callout preset-recommendation-callout"><strong>추천 전문 직원</strong>{planPreview.recommendedPresets.map(preset=><p key={preset.presetKey}><span>{preset.name}</span> · {preset.roleTitle}<br/><small>{preset.reason}</small><br/>{preset.activation==="already-available"?<small>이미 회사 직원으로 준비됨 · 계획을 다시 요청하면 투입 snapshot에 포함됩니다.</small>:<button type="button" className="secondary" disabled={busy||presetAction===preset.presetKey} onClick={()=>void addRecommendedPreset(preset.presetKey)}>{presetAction===preset.presetKey?"추가 중…":"회사 직원으로 추가"}</button>}</p>)}</div>}
               </section>
               <section className="card" aria-label="실행하면 이렇게 진행됩니다">
                 <h3>실행하면 이렇게 진행됩니다</h3>

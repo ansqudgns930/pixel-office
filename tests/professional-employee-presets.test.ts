@@ -70,3 +70,43 @@ test("preset profile activation creates a governed employee profile", () => {
   assert.ok(profile.promptProfile.taskInstructions.some((item) => /전문가 판단/.test(item)));
   assert.ok(profile.approvalRequiredActions.some((item) => /외부|결제|개인정보|계정/.test(item)));
 });
+
+
+test("delegated work recommends specialist presets from work signals", () => {
+  const plan = deriveWorkStaffingPlan("릴리즈 노트와 배포 go-no-go 체크리스트를 만들고, 장애 발생 시 rollback 기준도 정리해줘");
+  const keys = plan.recommendedPresets.map((preset) => preset.presetKey);
+  assert.ok(keys.includes("release-manager"));
+  assert.ok(keys.includes("technical-writer"));
+  assert.ok(keys.includes("sre"));
+  assert.equal(plan.risk, "high");
+  assert.ok(plan.signals.release);
+  assert.ok(plan.signals.docs);
+  assert.ok(plan.signals.ops);
+});
+
+test("delegated work marks recommended preset as already available when hired", () => {
+  const plan = deriveWorkStaffingPlan("서비스 로그와 장애 복구 절차를 점검해줘", [{
+    principalId: "sre",
+    name: "SRE",
+    roleTitle: "운영 안정성과 장애 대응 담당자",
+    summary: "운영 안정성 담당",
+    specialties: ["운영", "로그", "장애 대응"],
+    responsibilities: ["런타임 상태와 오류 로그를 점검합니다."],
+    approvalRequiredActions: ["외부 서비스 설정 변경"],
+  }]);
+  const sre = plan.recommendedPresets.find((preset) => preset.presetKey === "sre");
+  assert.ok(sre);
+  assert.equal(sre.activation, "already-available");
+});
+
+test("cost legal data and support work recommend corresponding professional presets", () => {
+  const plan = deriveWorkStaffingPlan("모델 사용량 비용과 개인정보 정책 리스크를 보고, 고객 문의 FAQ 지표를 분석해줘");
+  const keys = plan.recommendedPresets.map((preset) => preset.presetKey);
+  assert.ok(keys.includes("finops-manager"));
+  assert.ok(keys.includes("legal-policy-manager"));
+  assert.ok(keys.includes("data-analyst") || keys.includes("cs-manager"));
+  assert.ok(plan.signals.cost);
+  assert.ok(plan.signals.legal);
+  assert.ok(plan.signals.data);
+  assert.ok(plan.signals.support);
+});

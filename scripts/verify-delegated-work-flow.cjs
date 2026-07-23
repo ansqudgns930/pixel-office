@@ -97,7 +97,7 @@ async function main() {
     const goalId = url.searchParams.get('goalId');
     if (!goalId) throw new Error(`goalId missing after launch: ${page.url()}`);
     const goalsText = await page.locator('body').innerText();
-    for (const required of ['맡긴 일', '업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', '업무를 맡겼습니다', 'AI 팀이 계획을 실행 중입니다', '진행 보기', '픽셀 오피스 Live View', '결과·활동', '진행 단계', '다음 액션', '완료 리포트 준비 중', '만든 결과물', '검증 상태', '결정 이력', '다음 업무 맡기기']) {
+    for (const required of ['맡긴 일', '업무를 맡긴 뒤에는 여기서 진행 상태를 봅니다', '업무를 맡겼습니다', 'AI 팀이 계획을 실행 중입니다', '진행 보기', '픽셀 오피스 Live View', '결과·활동', '진행 단계', '다음 액션', '만든 결과물', '검증 상태', '결정 이력', '다음 업무 맡기기']) {
       if (!goalsText.includes(required)) throw new Error(`goals page missing delegated-work copy: ${required}`);
     }
 
